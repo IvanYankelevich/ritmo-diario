@@ -9,11 +9,13 @@ let cloudClient = null;
 let cloudSaveTimer = null;
 let reminderTimer = null;
 let isLoadingCloudState = false;
+let authMode = "signin";
 let selectedDate = toDateKey(new Date());
 let visibleMonth = new Date();
 
 const authScreen = document.querySelector("#authScreen");
 const appScreen = document.querySelector("#appScreen");
+const authTitle = document.querySelector("#authTitle");
 const calendarOverlay = document.querySelector("#calendarOverlay");
 const calendarGrid = document.querySelector("#calendarGrid");
 const monthTitle = document.querySelector("#monthTitle");
@@ -36,6 +38,11 @@ const authPassword = document.querySelector("#authPassword");
 const signInButton = document.querySelector("#signInButton");
 const signUpButton = document.querySelector("#signUpButton");
 const signOutButton = document.querySelector("#signOutButton");
+const showSignUpButton = document.querySelector("#showSignUpButton");
+const showSignInButton = document.querySelector("#showSignInButton");
+const signUpPrompt = document.querySelector("#signUpPrompt");
+const signInPrompt = document.querySelector("#signInPrompt");
+const togglePasswordButton = document.querySelector("#togglePasswordButton");
 const authStatus = document.querySelector("#authStatus");
 const notificationsEnabled = document.querySelector("#notificationsEnabled");
 const notificationInterval = document.querySelector("#notificationInterval");
@@ -127,6 +134,9 @@ rewardForm.addEventListener("submit", (event) => {
 signInButton.addEventListener("click", () => signIn());
 signUpButton.addEventListener("click", () => signUp());
 signOutButton.addEventListener("click", () => signOut());
+showSignUpButton.addEventListener("click", () => setAuthMode("signup"));
+showSignInButton.addEventListener("click", () => setAuthMode("signin"));
+togglePasswordButton.addEventListener("click", () => togglePasswordVisibility());
 notificationsEnabled.addEventListener("change", () => updateNotificationSettings());
 notificationInterval.addEventListener("change", () => updateNotificationSettings());
 testNotificationButton.addEventListener("click", () => testNotification());
@@ -220,14 +230,22 @@ function renderAuth() {
   const configured = Boolean(cloudClient);
   authScreen.hidden = Boolean(currentUser);
   appScreen.hidden = !currentUser;
-  signInButton.disabled = !configured;
-  signUpButton.disabled = !configured;
+  signInButton.disabled = !configured || authMode !== "signin";
+  signUpButton.disabled = !configured || authMode !== "signup";
   signOutButton.hidden = !currentUser;
+  signInButton.hidden = authMode !== "signin";
+  signUpButton.hidden = authMode !== "signup";
+  signUpPrompt.hidden = authMode !== "signin";
+  signInPrompt.hidden = authMode !== "signup";
+  authTitle.textContent = authMode === "signin" ? "Entrar" : "Registrarme";
+  authPassword.autocomplete = authMode === "signin" ? "current-password" : "new-password";
 
   if (!configured) {
     authStatus.textContent = "Falta configurar Supabase para usar la app.";
   } else if (currentUser) {
     authStatus.textContent = "Sesion iniciada.";
+  } else if (authMode === "signup") {
+    authStatus.textContent = "Crea tu cuenta y confirma el email para entrar.";
   } else {
     authStatus.textContent = "Inicia sesion para sincronizar tus tareas.";
   }
@@ -570,7 +588,7 @@ async function signIn() {
   });
 
   if (error) {
-    setSyncStatus("No se pudo entrar");
+    setSyncStatus(getAuthErrorMessage(error));
     return;
   }
 
@@ -580,18 +598,23 @@ async function signIn() {
 async function signUp() {
   if (!cloudReady) return;
   setSyncStatus("Creando cuenta...");
-  const { error } = await cloudClient.auth.signUp({
+  const { data, error } = await cloudClient.auth.signUp({
     email: authEmail.value.trim(),
     password: authPassword.value,
   });
 
   if (error) {
-    setSyncStatus("No se pudo crear");
+    setSyncStatus(getAuthErrorMessage(error));
     return;
   }
 
   authPassword.value = "";
-  setSyncStatus("Cuenta creada");
+  if (data.session) {
+    setSyncStatus("Cuenta creada. Entrando...");
+  } else {
+    setSyncStatus("Cuenta creada. Revisa tu email y confirma la cuenta antes de entrar.");
+    setAuthMode("signin", false);
+  }
 }
 
 async function signOut() {
@@ -660,6 +683,54 @@ async function saveCloudState() {
 
 function setSyncStatus(message) {
   authStatus.textContent = message;
+}
+
+function setAuthMode(mode, resetStatus = true) {
+  authMode = mode;
+  authPassword.value = "";
+  authPassword.type = "password";
+  togglePasswordButton.textContent = "Ver";
+  togglePasswordButton.setAttribute("aria-label", "Mostrar contrasena");
+  renderAuth();
+
+  if (!resetStatus) return;
+  authStatus.textContent =
+    authMode === "signin"
+      ? "Inicia sesion para sincronizar tus tareas."
+      : "Crea tu cuenta y confirma el email para entrar.";
+}
+
+function togglePasswordVisibility() {
+  const isVisible = authPassword.type === "text";
+  authPassword.type = isVisible ? "password" : "text";
+  togglePasswordButton.textContent = isVisible ? "Ver" : "Ocultar";
+  togglePasswordButton.setAttribute("aria-label", isVisible ? "Mostrar contrasena" : "Ocultar contrasena");
+}
+
+function getAuthErrorMessage(error) {
+  const message = String(error?.message || "").toLowerCase();
+
+  if (message.includes("invalid login credentials")) {
+    return "Email o contrasena incorrectos.";
+  }
+
+  if (message.includes("email not confirmed")) {
+    return "Falta confirmar el email.";
+  }
+
+  if (message.includes("password")) {
+    return "La contrasena debe tener al menos 6 caracteres.";
+  }
+
+  if (message.includes("already registered") || message.includes("already been registered")) {
+    return "Ese email ya tiene cuenta. Usa Entrar.";
+  }
+
+  if (message.includes("rate limit")) {
+    return "Demasiados intentos. Espera un momento.";
+  }
+
+  return error?.message ? `Error: ${error.message}` : "No se pudo completar la accion.";
 }
 
 async function updateNotificationSettings() {

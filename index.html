@@ -10,7 +10,7 @@
     <main id="authScreen" class="auth-screen">
       <section class="auth-card">
         <p class="eyebrow">Ritmo Diario</p>
-        <h1>Entrar</h1>
+        <h1 id="authTitle">Entrar</h1>
         <p id="authStatus" class="auth-status">Inicia sesion para sincronizar tus tareas.</p>
         <form id="authForm" class="auth-form standalone-auth">
           <div class="field">
@@ -19,12 +19,23 @@
           </div>
           <div class="field">
             <label for="authPassword">Contrasena</label>
-            <input id="authPassword" type="password" autocomplete="current-password" placeholder="Minimo 6 caracteres" />
+            <div class="password-field">
+              <input id="authPassword" type="password" autocomplete="current-password" placeholder="Minimo 6 caracteres" />
+              <button id="togglePasswordButton" type="button" aria-label="Mostrar contrasena">Ver</button>
+            </div>
           </div>
           <div class="auth-actions">
             <button class="primary-button" id="signInButton" type="button">Entrar</button>
-            <button class="secondary-button" id="signUpButton" type="button">Crear cuenta</button>
+            <button class="primary-button" id="signUpButton" type="button" hidden>Registrarme</button>
           </div>
+          <p class="auth-switch" id="signUpPrompt">
+            No tenes cuenta?
+            <button id="showSignUpButton" type="button">Registrate aca</button>
+          </p>
+          <p class="auth-switch" id="signInPrompt" hidden>
+            Ya tenes cuenta?
+            <button id="showSignInButton" type="button">Entrar</button>
+          </p>
         </form>
       </section>
     </main>
