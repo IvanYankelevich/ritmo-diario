@@ -1,0 +1,12 @@
+{
+  "name": "ritmo-diario",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "start": "npx serve .",
+    "build": "echo \"Static app ready\""
+  },
+  "devDependencies": {
+    "serve": "^14.2.5"
+  }
+}
