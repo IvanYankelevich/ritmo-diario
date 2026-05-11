@@ -44,7 +44,10 @@
       <section class="topbar" aria-label="Resumen">
         <div>
           <p class="eyebrow">Ritmo Diario</p>
-          <h1 id="selectedDateTitle">Hoy</h1>
+          <div class="title-row">
+            <h1 id="selectedDateTitle">Hoy</h1>
+            <button class="mini-button" id="signOutButton" type="button">Salir</button>
+          </div>
         </div>
         <div class="level-card" aria-label="Progreso de nivel">
           <div class="level-meta">
@@ -89,8 +92,6 @@
             </form>
             <ul id="rewardList" class="reward-list"></ul>
           </details>
-
-          <button class="secondary-button sign-out-top" id="signOutButton" type="button">Salir</button>
 
           <details class="notification-menu">
             <summary>

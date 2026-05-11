@@ -134,6 +134,25 @@ h1 {
   letter-spacing: 0;
 }
 
+.title-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: start;
+}
+
+.mini-button {
+  min-height: 34px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fffaf0;
+  color: var(--accent-strong);
+  cursor: pointer;
+  font-size: 0.82rem;
+  font-weight: 900;
+  padding: 0 10px;
+}
+
 .level-card,
 .date-panel,
 .calendar-panel,
@@ -735,11 +754,6 @@ select:focus {
   padding: 0;
 }
 
-.sign-out-top {
-  margin-top: 10px;
-  width: 100%;
-}
-
 .reward-list {
   display: grid;
   gap: 10px;
@@ -807,6 +821,10 @@ select:focus {
   h1 {
     font-size: 2.6rem;
   }
+
+  .title-row {
+    align-items: center;
+  }
 }
 
 @media (max-width: 440px) {
@@ -840,6 +858,11 @@ select:focus {
 
   h1 {
     font-size: 2.15rem;
+  }
+
+  .mini-button {
+    min-height: 32px;
+    padding: 0 9px;
   }
 
   .level-card,

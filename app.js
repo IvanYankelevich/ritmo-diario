@@ -245,7 +245,7 @@ function renderAuth() {
   } else if (currentUser) {
     authStatus.textContent = "Sesion iniciada.";
   } else if (authMode === "signup") {
-    authStatus.textContent = "Crea tu cuenta y confirma el email para entrar.";
+    authStatus.textContent = "Crea tu cuenta para empezar a sincronizar.";
   } else {
     authStatus.textContent = "Inicia sesion para sincronizar tus tareas.";
   }
@@ -612,7 +612,7 @@ async function signUp() {
   if (data.session) {
     setSyncStatus("Cuenta creada. Entrando...");
   } else {
-    setSyncStatus("Cuenta creada. Revisa tu email y confirma la cuenta antes de entrar.");
+    setSyncStatus("Cuenta creada. Ahora podes entrar.");
     setAuthMode("signin", false);
   }
 }
@@ -697,7 +697,7 @@ function setAuthMode(mode, resetStatus = true) {
   authStatus.textContent =
     authMode === "signin"
       ? "Inicia sesion para sincronizar tus tareas."
-      : "Crea tu cuenta y confirma el email para entrar.";
+      : "Crea tu cuenta para empezar a sincronizar.";
 }
 
 function togglePasswordVisibility() {
