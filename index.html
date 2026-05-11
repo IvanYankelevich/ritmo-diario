@@ -57,7 +57,7 @@
           <div class="progress-track">
             <div id="xpBar" class="progress-fill"></div>
           </div>
-          <p id="nextRewardText" class="next-reward">Proximo premio: nivel 5</p>
+          <p id="nextRewardText" class="next-reward">Proximo premio: nivel 2</p>
 
           <div class="stats-row compact-stats" aria-label="Estado del dia">
             <div>
@@ -77,7 +77,7 @@
           <details class="reward-menu">
             <summary>
               <span>Premios</span>
-              <small>Cada 5 niveles</small>
+              <small>Por nivel</small>
             </summary>
             <form id="rewardForm" class="reward-form">
               <div class="field">
@@ -91,6 +91,17 @@
               <button class="primary-button" type="submit">Guardar</button>
             </form>
             <ul id="rewardList" class="reward-list"></ul>
+          </details>
+
+          <details class="theme-menu">
+            <summary>
+              <span>Tema</span>
+              <small id="themeStatus">Claro</small>
+            </summary>
+            <div class="theme-settings">
+              <button class="secondary-button theme-choice" id="lightThemeButton" type="button">Claro</button>
+              <button class="secondary-button theme-choice" id="darkThemeButton" type="button">Oscuro</button>
+            </div>
           </details>
 
           <details class="notification-menu">
@@ -202,6 +213,15 @@
           </div>
           <div id="calendarGrid" class="calendar-grid"></div>
         </aside>
+      </div>
+
+      <div id="levelUpOverlay" class="level-up-overlay" hidden>
+        <section class="level-up-card" role="dialog" aria-modal="true" aria-labelledby="levelUpTitle">
+          <p class="eyebrow">Subiste de nivel</p>
+          <h2 id="levelUpTitle">Nivel 2</h2>
+          <p id="levelUpReward">Ganaste una recompensa.</p>
+          <button class="primary-button" id="closeLevelUpButton" type="button">Genial</button>
+        </section>
       </div>
     </main>
 

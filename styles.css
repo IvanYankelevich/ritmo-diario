@@ -12,6 +12,20 @@
   --shadow: 0 18px 50px rgba(52, 43, 31, 0.13);
 }
 
+body[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #151816;
+  --ink: #f4efe5;
+  --muted: #b5aa9a;
+  --line: #3c433e;
+  --panel: #20251f;
+  --accent: #5fb6a9;
+  --accent-strong: #87d9cc;
+  --gold: #d9af5b;
+  --rose: #e38a8a;
+  --shadow: 0 18px 50px rgba(0, 0, 0, 0.32);
+}
+
 * {
   box-sizing: border-box;
 }
@@ -26,6 +40,13 @@ body {
     var(--bg);
   font-family:
     Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+body[data-theme="dark"] {
+  background:
+    linear-gradient(125deg, rgba(95, 182, 169, 0.12), transparent 38%),
+    linear-gradient(245deg, rgba(217, 175, 91, 0.12), transparent 42%),
+    var(--bg);
 }
 
 button,
@@ -92,6 +113,15 @@ select {
   background: rgba(255, 253, 248, 0.94);
   box-shadow: var(--shadow);
   padding: 22px;
+}
+
+body[data-theme="dark"] .auth-card,
+body[data-theme="dark"] .level-card,
+body[data-theme="dark"] .date-panel,
+body[data-theme="dark"] .calendar-panel,
+body[data-theme="dark"] .task-panel {
+  background: rgba(32, 37, 31, 0.94);
+  border-color: rgba(60, 67, 62, 0.95);
 }
 
 .auth-card h1 {
@@ -189,6 +219,10 @@ h1 {
   overflow: hidden;
   border-radius: 999px;
   background: #e6dfd2;
+}
+
+body[data-theme="dark"] .progress-track {
+  background: #333930;
 }
 
 .progress-fill {
@@ -610,7 +644,8 @@ select:focus {
 
 .reward-menu,
 .account-menu,
-.notification-menu {
+.notification-menu,
+.theme-menu {
   border: 1px solid var(--line);
   border-radius: 8px;
   background: #faf5e9;
@@ -618,13 +653,15 @@ select:focus {
 }
 
 .account-menu,
-.notification-menu {
+.notification-menu,
+.theme-menu {
   margin-top: 10px;
 }
 
 .reward-menu summary,
 .account-menu summary,
-.notification-menu summary {
+.notification-menu summary,
+.theme-menu summary {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -637,13 +674,15 @@ select:focus {
 
 .reward-menu summary::-webkit-details-marker,
 .account-menu summary::-webkit-details-marker,
-.notification-menu summary::-webkit-details-marker {
+.notification-menu summary::-webkit-details-marker,
+.theme-menu summary::-webkit-details-marker {
   display: none;
 }
 
 .reward-menu summary::after,
 .account-menu summary::after,
-.notification-menu summary::after {
+.notification-menu summary::after,
+.theme-menu summary::after {
   content: "+";
   display: grid;
   place-items: center;
@@ -657,19 +696,22 @@ select:focus {
 
 .reward-menu[open] summary::after,
 .account-menu[open] summary::after,
-.notification-menu[open] summary::after {
+.notification-menu[open] summary::after,
+.theme-menu[open] summary::after {
   content: "-";
 }
 
 .reward-menu summary span,
 .account-menu summary span,
-.notification-menu summary span {
+.notification-menu summary span,
+.theme-menu summary span {
   font-weight: 900;
 }
 
 .reward-menu summary small,
 .account-menu summary small,
-.notification-menu summary small {
+.notification-menu summary small,
+.theme-menu summary small {
   margin-left: auto;
   color: var(--muted);
   font-weight: 750;
@@ -717,6 +759,20 @@ select:focus {
   width: 18px;
   min-height: 18px;
   accent-color: var(--accent);
+}
+
+.theme-settings {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  padding: 12px;
+  border-top: 1px solid var(--line);
+}
+
+.theme-choice.active {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: white;
 }
 
 .auth-actions {
@@ -800,6 +856,64 @@ select:focus {
 .delete-button.compact svg {
   width: 17px;
   height: 17px;
+}
+
+.level-up-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+  display: grid;
+  place-items: center;
+  background: rgba(34, 32, 29, 0.42);
+  padding: 20px;
+}
+
+.level-up-overlay[hidden] {
+  display: none;
+}
+
+.level-up-card {
+  width: min(380px, 100%);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--panel);
+  box-shadow: var(--shadow);
+  padding: 20px;
+  text-align: center;
+}
+
+.level-up-card h2 {
+  margin: 6px 0 10px;
+  font-size: 2.3rem;
+}
+
+.level-up-card p:not(.eyebrow) {
+  margin-bottom: 16px;
+  color: var(--muted);
+  font-weight: 800;
+}
+
+body[data-theme="dark"] .mini-button,
+body[data-theme="dark"] .icon-button,
+body[data-theme="dark"] .secondary-button,
+body[data-theme="dark"] .delete-button,
+body[data-theme="dark"] .check-button,
+body[data-theme="dark"] input,
+body[data-theme="dark"] select,
+body[data-theme="dark"] .password-field,
+body[data-theme="dark"] .password-field button,
+body[data-theme="dark"] .week-day-button,
+body[data-theme="dark"] .day-button.current-month,
+body[data-theme="dark"] .stats-row div,
+body[data-theme="dark"] .reward-menu,
+body[data-theme="dark"] .account-menu,
+body[data-theme="dark"] .notification-menu,
+body[data-theme="dark"] .theme-menu,
+body[data-theme="dark"] .reward-item,
+body[data-theme="dark"] .reward-empty,
+body[data-theme="dark"] .task-item {
+  background: #252b25;
+  border-color: var(--line);
 }
 
 @media (max-width: 860px) {

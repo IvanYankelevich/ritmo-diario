@@ -10,6 +10,7 @@ let cloudSaveTimer = null;
 let reminderTimer = null;
 let isLoadingCloudState = false;
 let authMode = "signin";
+let lastRenderedLevel = null;
 let selectedDate = toDateKey(new Date());
 let visibleMonth = new Date();
 
@@ -48,6 +49,13 @@ const notificationsEnabled = document.querySelector("#notificationsEnabled");
 const notificationInterval = document.querySelector("#notificationInterval");
 const notificationStatus = document.querySelector("#notificationStatus");
 const testNotificationButton = document.querySelector("#testNotificationButton");
+const themeStatus = document.querySelector("#themeStatus");
+const lightThemeButton = document.querySelector("#lightThemeButton");
+const darkThemeButton = document.querySelector("#darkThemeButton");
+const levelUpOverlay = document.querySelector("#levelUpOverlay");
+const levelUpTitle = document.querySelector("#levelUpTitle");
+const levelUpReward = document.querySelector("#levelUpReward");
+const closeLevelUpButton = document.querySelector("#closeLevelUpButton");
 const levelLabel = document.querySelector("#levelLabel");
 const xpLabel = document.querySelector("#xpLabel");
 const xpBar = document.querySelector("#xpBar");
@@ -140,6 +148,11 @@ togglePasswordButton.addEventListener("click", () => togglePasswordVisibility())
 notificationsEnabled.addEventListener("change", () => updateNotificationSettings());
 notificationInterval.addEventListener("change", () => updateNotificationSettings());
 testNotificationButton.addEventListener("click", () => testNotification());
+lightThemeButton.addEventListener("click", () => setTheme("light"));
+darkThemeButton.addEventListener("click", () => setTheme("dark"));
+closeLevelUpButton.addEventListener("click", () => {
+  levelUpOverlay.hidden = true;
+});
 
 initCloudSync();
 
@@ -194,7 +207,7 @@ function normalizeState(saved) {
     })),
     rewards: Array.isArray(saved.rewards)
       ? saved.rewards
-          .filter((reward) => Number(reward.level) % 5 === 0)
+          .filter((reward) => Number(reward.level) >= 2)
           .map((reward) => ({ level: Number(reward.level), title: String(reward.title || "") }))
       : [],
     settings: {
@@ -216,6 +229,7 @@ function saveState() {
 
 function render() {
   renderAuth();
+  renderTheme();
   if (!currentUser) return;
   renderHeader();
   renderWeek();
@@ -405,11 +419,12 @@ function renderProgress() {
   xpLabel.textContent = `${levelXp} / ${XP_PER_LEVEL} XP`;
   xpBar.style.width = `${levelXp}%`;
   nextRewardText.textContent = getNextRewardText(level);
+  maybeShowLevelUp(level);
 }
 
 function renderRewards() {
   rewardLevel.innerHTML = "";
-  for (let level = 5; level <= 100; level += 5) {
+  for (let level = 2; level <= 100; level += 1) {
     const option = document.createElement("option");
     option.value = level;
     option.textContent = `Nivel ${level}`;
@@ -461,7 +476,7 @@ function getSelectedTasks() {
 }
 
 function getNextRewardText(level) {
-  const nextRewardLevel = Math.ceil((level + 1) / 5) * 5;
+  const nextRewardLevel = level + 1;
   const reward = state.rewards.find((item) => item.level === nextRewardLevel);
   if (reward) return `Proximo premio: nivel ${nextRewardLevel} - ${reward.title}`;
   return `Proximo premio: nivel ${nextRewardLevel}`;
@@ -799,6 +814,8 @@ function getDefaultSettings() {
     notificationsEnabled: false,
     notificationIntervalMinutes: 120,
     lastNotificationAt: 0,
+    theme: "light",
+    highestLevelCelebrated: 1,
   };
 }
 
@@ -806,6 +823,46 @@ function formatInterval(minutes) {
   if (minutes < 60) return `${minutes} min`;
   const hours = minutes / 60;
   return `${hours} h`;
+}
+
+function maybeShowLevelUp(level) {
+  if (lastRenderedLevel === null) {
+    lastRenderedLevel = level;
+    state.settings.highestLevelCelebrated = Math.max(state.settings.highestLevelCelebrated || 1, level);
+    return;
+  }
+
+  if (level <= lastRenderedLevel || level <= (state.settings.highestLevelCelebrated || 1)) {
+    lastRenderedLevel = level;
+    return;
+  }
+
+  lastRenderedLevel = level;
+  state.settings.highestLevelCelebrated = level;
+  saveState();
+  showLevelUp(level);
+}
+
+function showLevelUp(level) {
+  const reward = state.rewards.find((item) => item.level === level);
+  levelUpTitle.textContent = `Nivel ${level}`;
+  levelUpReward.textContent = reward
+    ? `Ganaste: ${reward.title}`
+    : "No cargaste recompensa para este nivel, pero igual subiste.";
+  levelUpOverlay.hidden = false;
+}
+
+function renderTheme() {
+  document.body.dataset.theme = state.settings.theme;
+  themeStatus.textContent = state.settings.theme === "dark" ? "Oscuro" : "Claro";
+  lightThemeButton.classList.toggle("active", state.settings.theme === "light");
+  darkThemeButton.classList.toggle("active", state.settings.theme === "dark");
+}
+
+function setTheme(theme) {
+  state.settings.theme = theme;
+  saveState();
+  renderTheme();
 }
 
 render();
