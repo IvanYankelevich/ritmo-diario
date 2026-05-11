@@ -46,7 +46,12 @@
           <p class="eyebrow">Ritmo Diario</p>
           <div class="title-row">
             <h1 id="selectedDateTitle">Hoy</h1>
-            <button class="mini-button" id="signOutButton" type="button">Salir</button>
+            <div class="top-actions">
+              <button class="mini-button theme-toggle" id="themeToggleButton" type="button" aria-label="Cambiar tema">
+                <span id="themeIcon">&#9790;</span>
+              </button>
+              <button class="mini-button" id="signOutButton" type="button">Salir</button>
+            </div>
           </div>
         </div>
         <div class="level-card" aria-label="Progreso de nivel">
@@ -93,41 +98,31 @@
             <ul id="rewardList" class="reward-list"></ul>
           </details>
 
-          <details class="theme-menu">
-            <summary>
-              <span>Tema</span>
-              <small id="themeStatus">Claro</small>
-            </summary>
-            <div class="theme-settings">
-              <button class="secondary-button theme-choice" id="lightThemeButton" type="button">Claro</button>
-              <button class="secondary-button theme-choice" id="darkThemeButton" type="button">Oscuro</button>
-            </div>
-          </details>
-
-          <details class="notification-menu">
-            <summary>
-              <span>Avisos</span>
-              <small id="notificationStatus">Apagados</small>
-            </summary>
-            <div class="notification-settings">
-              <label class="toggle-row">
-                <input id="notificationsEnabled" type="checkbox" />
-                <span>Recordarme tareas pendientes</span>
-              </label>
-              <div class="field">
-                <label for="notificationInterval">Frecuencia</label>
-                <select id="notificationInterval">
-                  <option value="60">Cada 1 hora</option>
-                  <option value="120" selected>Cada 2 horas</option>
-                  <option value="180">Cada 3 horas</option>
-                  <option value="240">Cada 4 horas</option>
-                </select>
-              </div>
-              <button class="secondary-button" id="testNotificationButton" type="button">Probar aviso</button>
-            </div>
-          </details>
         </div>
       </section>
+
+      <details class="notification-menu compact-menu">
+        <summary>
+          <span>Recordatorios</span>
+          <small id="notificationStatus">Apagados</small>
+        </summary>
+        <div class="notification-settings">
+          <label class="toggle-row">
+            <input id="notificationsEnabled" type="checkbox" />
+            <span>Recordarme tareas pendientes</span>
+          </label>
+          <div class="field">
+            <label for="notificationInterval">Frecuencia</label>
+            <select id="notificationInterval">
+              <option value="60">Cada 1 hora</option>
+              <option value="120" selected>Cada 2 horas</option>
+              <option value="180">Cada 3 horas</option>
+              <option value="240">Cada 4 horas</option>
+            </select>
+          </div>
+          <button class="secondary-button" id="testNotificationButton" type="button">Probar recordatorio</button>
+        </div>
+      </details>
 
       <section class="date-panel" aria-label="Selector semanal">
         <div class="week-header">

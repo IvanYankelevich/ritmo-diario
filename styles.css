@@ -171,6 +171,12 @@ h1 {
   align-items: start;
 }
 
+.top-actions {
+  display: inline-grid;
+  grid-auto-flow: column;
+  gap: 8px;
+}
+
 .mini-button {
   min-height: 34px;
   border: 1px solid var(--line);
@@ -181,6 +187,12 @@ h1 {
   font-size: 0.82rem;
   font-weight: 900;
   padding: 0 10px;
+}
+
+.theme-toggle {
+  width: 34px;
+  padding: 0;
+  font-size: 1.08rem;
 }
 
 .level-card,
@@ -644,8 +656,7 @@ select:focus {
 
 .reward-menu,
 .account-menu,
-.notification-menu,
-.theme-menu {
+.notification-menu {
   border: 1px solid var(--line);
   border-radius: 8px;
   background: #faf5e9;
@@ -653,15 +664,13 @@ select:focus {
 }
 
 .account-menu,
-.notification-menu,
-.theme-menu {
+.notification-menu {
   margin-top: 10px;
 }
 
 .reward-menu summary,
 .account-menu summary,
-.notification-menu summary,
-.theme-menu summary {
+.notification-menu summary {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -674,15 +683,13 @@ select:focus {
 
 .reward-menu summary::-webkit-details-marker,
 .account-menu summary::-webkit-details-marker,
-.notification-menu summary::-webkit-details-marker,
-.theme-menu summary::-webkit-details-marker {
+.notification-menu summary::-webkit-details-marker {
   display: none;
 }
 
 .reward-menu summary::after,
 .account-menu summary::after,
-.notification-menu summary::after,
-.theme-menu summary::after {
+.notification-menu summary::after {
   content: "+";
   display: grid;
   place-items: center;
@@ -696,22 +703,19 @@ select:focus {
 
 .reward-menu[open] summary::after,
 .account-menu[open] summary::after,
-.notification-menu[open] summary::after,
-.theme-menu[open] summary::after {
+.notification-menu[open] summary::after {
   content: "-";
 }
 
 .reward-menu summary span,
 .account-menu summary span,
-.notification-menu summary span,
-.theme-menu summary span {
+.notification-menu summary span {
   font-weight: 900;
 }
 
 .reward-menu summary small,
 .account-menu summary small,
-.notification-menu summary small,
-.theme-menu summary small {
+.notification-menu summary small {
   margin-left: auto;
   color: var(--muted);
   font-weight: 750;
@@ -759,20 +763,6 @@ select:focus {
   width: 18px;
   min-height: 18px;
   accent-color: var(--accent);
-}
-
-.theme-settings {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 8px;
-  padding: 12px;
-  border-top: 1px solid var(--line);
-}
-
-.theme-choice.active {
-  border-color: var(--accent);
-  background: var(--accent);
-  color: white;
 }
 
 .auth-actions {
@@ -908,12 +898,26 @@ body[data-theme="dark"] .stats-row div,
 body[data-theme="dark"] .reward-menu,
 body[data-theme="dark"] .account-menu,
 body[data-theme="dark"] .notification-menu,
-body[data-theme="dark"] .theme-menu,
 body[data-theme="dark"] .reward-item,
 body[data-theme="dark"] .reward-empty,
 body[data-theme="dark"] .task-item {
   background: #252b25;
   border-color: var(--line);
+}
+
+.compact-menu {
+  width: min(1180px, calc(100% - 32px));
+  margin: 0 auto 14px;
+  box-shadow: var(--shadow);
+}
+
+.compact-menu summary {
+  min-height: 40px;
+}
+
+.compact-menu .notification-settings {
+  grid-template-columns: minmax(0, 1fr) 180px auto;
+  align-items: end;
 }
 
 @media (max-width: 860px) {
@@ -977,6 +981,19 @@ body[data-theme="dark"] .task-item {
   .mini-button {
     min-height: 32px;
     padding: 0 9px;
+  }
+
+  .theme-toggle {
+    width: 32px;
+    padding: 0;
+  }
+
+  .compact-menu {
+    width: min(100% - 18px, 620px);
+  }
+
+  .compact-menu .notification-settings {
+    grid-template-columns: 1fr;
   }
 
   .level-card,

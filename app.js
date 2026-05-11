@@ -49,9 +49,8 @@ const notificationsEnabled = document.querySelector("#notificationsEnabled");
 const notificationInterval = document.querySelector("#notificationInterval");
 const notificationStatus = document.querySelector("#notificationStatus");
 const testNotificationButton = document.querySelector("#testNotificationButton");
-const themeStatus = document.querySelector("#themeStatus");
-const lightThemeButton = document.querySelector("#lightThemeButton");
-const darkThemeButton = document.querySelector("#darkThemeButton");
+const themeToggleButton = document.querySelector("#themeToggleButton");
+const themeIcon = document.querySelector("#themeIcon");
 const levelUpOverlay = document.querySelector("#levelUpOverlay");
 const levelUpTitle = document.querySelector("#levelUpTitle");
 const levelUpReward = document.querySelector("#levelUpReward");
@@ -148,8 +147,7 @@ togglePasswordButton.addEventListener("click", () => togglePasswordVisibility())
 notificationsEnabled.addEventListener("change", () => updateNotificationSettings());
 notificationInterval.addEventListener("change", () => updateNotificationSettings());
 testNotificationButton.addEventListener("click", () => testNotification());
-lightThemeButton.addEventListener("click", () => setTheme("light"));
-darkThemeButton.addEventListener("click", () => setTheme("dark"));
+themeToggleButton.addEventListener("click", () => toggleTheme());
 closeLevelUpButton.addEventListener("click", () => {
   levelUpOverlay.hidden = true;
 });
@@ -627,8 +625,8 @@ async function signUp() {
   if (data.session) {
     setSyncStatus("Cuenta creada. Entrando...");
   } else {
-    setSyncStatus("Cuenta creada. Ahora podes entrar.");
     setAuthMode("signin", false);
+    setSyncStatus("Cuenta creada. Ahora podes entrar.");
   }
 }
 
@@ -854,15 +852,18 @@ function showLevelUp(level) {
 
 function renderTheme() {
   document.body.dataset.theme = state.settings.theme;
-  themeStatus.textContent = state.settings.theme === "dark" ? "Oscuro" : "Claro";
-  lightThemeButton.classList.toggle("active", state.settings.theme === "light");
-  darkThemeButton.classList.toggle("active", state.settings.theme === "dark");
+  themeIcon.innerHTML = state.settings.theme === "dark" ? "&#9728;" : "&#9790;";
+  themeToggleButton.title = state.settings.theme === "dark" ? "Tema claro" : "Tema oscuro";
 }
 
 function setTheme(theme) {
   state.settings.theme = theme;
   saveState();
   renderTheme();
+}
+
+function toggleTheme() {
+  setTheme(state.settings.theme === "dark" ? "light" : "dark");
 }
 
 render();
