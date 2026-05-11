@@ -7,7 +7,29 @@
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
-    <main class="app-shell">
+    <main id="authScreen" class="auth-screen">
+      <section class="auth-card">
+        <p class="eyebrow">Ritmo Diario</p>
+        <h1>Entrar</h1>
+        <p id="authStatus" class="auth-status">Inicia sesion para sincronizar tus tareas.</p>
+        <form id="authForm" class="auth-form standalone-auth">
+          <div class="field">
+            <label for="authEmail">Email</label>
+            <input id="authEmail" type="email" autocomplete="email" placeholder="tu@email.com" />
+          </div>
+          <div class="field">
+            <label for="authPassword">Contrasena</label>
+            <input id="authPassword" type="password" autocomplete="current-password" placeholder="Minimo 6 caracteres" />
+          </div>
+          <div class="auth-actions">
+            <button class="primary-button" id="signInButton" type="button">Entrar</button>
+            <button class="secondary-button" id="signUpButton" type="button">Crear cuenta</button>
+          </div>
+        </form>
+      </section>
+    </main>
+
+    <main id="appScreen" class="app-shell" hidden>
       <section class="topbar" aria-label="Resumen">
         <div>
           <p class="eyebrow">Ritmo Diario</p>
@@ -55,6 +77,31 @@
               <button class="primary-button" type="submit">Guardar</button>
             </form>
             <ul id="rewardList" class="reward-list"></ul>
+          </details>
+
+          <button class="secondary-button sign-out-top" id="signOutButton" type="button">Salir</button>
+
+          <details class="notification-menu">
+            <summary>
+              <span>Avisos</span>
+              <small id="notificationStatus">Apagados</small>
+            </summary>
+            <div class="notification-settings">
+              <label class="toggle-row">
+                <input id="notificationsEnabled" type="checkbox" />
+                <span>Recordarme tareas pendientes</span>
+              </label>
+              <div class="field">
+                <label for="notificationInterval">Frecuencia</label>
+                <select id="notificationInterval">
+                  <option value="60">Cada 1 hora</option>
+                  <option value="120" selected>Cada 2 horas</option>
+                  <option value="180">Cada 3 horas</option>
+                  <option value="240">Cada 4 horas</option>
+                </select>
+              </div>
+              <button class="secondary-button" id="testNotificationButton" type="button">Probar aviso</button>
+            </div>
           </details>
         </div>
       </section>
@@ -146,6 +193,8 @@
       </div>
     </main>
 
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="supabase-config.js"></script>
     <script src="app.js"></script>
   </body>
 </html>

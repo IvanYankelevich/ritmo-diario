@@ -3,9 +3,17 @@ const XP_PER_LEVEL = 100;
 const MAX_TASK_XP = 30;
 
 const state = loadState();
+let currentUser = null;
+let cloudReady = false;
+let cloudClient = null;
+let cloudSaveTimer = null;
+let reminderTimer = null;
+let isLoadingCloudState = false;
 let selectedDate = toDateKey(new Date());
 let visibleMonth = new Date();
 
+const authScreen = document.querySelector("#authScreen");
+const appScreen = document.querySelector("#appScreen");
 const calendarOverlay = document.querySelector("#calendarOverlay");
 const calendarGrid = document.querySelector("#calendarGrid");
 const monthTitle = document.querySelector("#monthTitle");
@@ -23,6 +31,16 @@ const rewardForm = document.querySelector("#rewardForm");
 const rewardLevel = document.querySelector("#rewardLevel");
 const rewardTitle = document.querySelector("#rewardTitle");
 const rewardList = document.querySelector("#rewardList");
+const authEmail = document.querySelector("#authEmail");
+const authPassword = document.querySelector("#authPassword");
+const signInButton = document.querySelector("#signInButton");
+const signUpButton = document.querySelector("#signUpButton");
+const signOutButton = document.querySelector("#signOutButton");
+const authStatus = document.querySelector("#authStatus");
+const notificationsEnabled = document.querySelector("#notificationsEnabled");
+const notificationInterval = document.querySelector("#notificationInterval");
+const notificationStatus = document.querySelector("#notificationStatus");
+const testNotificationButton = document.querySelector("#testNotificationButton");
 const levelLabel = document.querySelector("#levelLabel");
 const xpLabel = document.querySelector("#xpLabel");
 const xpBar = document.querySelector("#xpBar");
@@ -106,6 +124,15 @@ rewardForm.addEventListener("submit", (event) => {
   render();
 });
 
+signInButton.addEventListener("click", () => signIn());
+signUpButton.addEventListener("click", () => signUp());
+signOutButton.addEventListener("click", () => signOut());
+notificationsEnabled.addEventListener("change", () => updateNotificationSettings());
+notificationInterval.addEventListener("change", () => updateNotificationSettings());
+testNotificationButton.addEventListener("click", () => testNotification());
+
+initCloudSync();
+
 function selectDate(key) {
   selectedDate = key;
   const date = parseDateKey(key);
@@ -145,6 +172,7 @@ function loadState() {
       },
     ],
     rewards: [],
+    settings: getDefaultSettings(),
   };
 }
 
@@ -159,6 +187,10 @@ function normalizeState(saved) {
           .filter((reward) => Number(reward.level) % 5 === 0)
           .map((reward) => ({ level: Number(reward.level), title: String(reward.title || "") }))
       : [],
+    settings: {
+      ...getDefaultSettings(),
+      ...(saved.settings || {}),
+    },
   };
 }
 
@@ -168,15 +200,61 @@ function saveState() {
   } catch {
     // The app still works during the session if browser storage is blocked.
   }
+
+  queueCloudSave();
 }
 
 function render() {
+  renderAuth();
+  if (!currentUser) return;
   renderHeader();
   renderWeek();
   renderCalendar();
   renderTasks();
   renderProgress();
   renderRewards();
+  renderNotifications();
+}
+
+function renderAuth() {
+  const configured = Boolean(cloudClient);
+  authScreen.hidden = Boolean(currentUser);
+  appScreen.hidden = !currentUser;
+  signInButton.disabled = !configured;
+  signUpButton.disabled = !configured;
+  signOutButton.hidden = !currentUser;
+
+  if (!configured) {
+    authStatus.textContent = "Falta configurar Supabase para usar la app.";
+  } else if (currentUser) {
+    authStatus.textContent = "Sesion iniciada.";
+  } else {
+    authStatus.textContent = "Inicia sesion para sincronizar tus tareas.";
+  }
+}
+
+function renderNotifications() {
+  notificationsEnabled.checked = Boolean(state.settings.notificationsEnabled);
+  notificationInterval.value = String(state.settings.notificationIntervalMinutes);
+
+  if (!("Notification" in window)) {
+    notificationStatus.textContent = "No disponible";
+    notificationsEnabled.disabled = true;
+    testNotificationButton.disabled = true;
+    return;
+  }
+
+  if (!state.settings.notificationsEnabled) {
+    notificationStatus.textContent = "Apagados";
+  } else if (Notification.permission === "granted") {
+    notificationStatus.textContent = `Cada ${formatInterval(state.settings.notificationIntervalMinutes)}`;
+  } else if (Notification.permission === "denied") {
+    notificationStatus.textContent = "Bloqueados";
+  } else {
+    notificationStatus.textContent = "Pedir permiso";
+  }
+
+  scheduleReminderCheck();
 }
 
 function renderHeader() {
@@ -457,6 +535,206 @@ function clamp(value, min, max) {
 
 function createId() {
   return `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+}
+
+function initCloudSync() {
+  const config = window.RITMO_SUPABASE || {};
+  const hasConfig = Boolean(config.url && config.anonKey && window.supabase);
+
+  if (!hasConfig) {
+    render();
+    return;
+  }
+
+  cloudReady = true;
+  cloudClient = window.supabase.createClient(config.url, config.anonKey);
+  cloudClient.auth.getSession().then(({ data }) => {
+    currentUser = data.session?.user || null;
+    if (currentUser) loadCloudState();
+    render();
+  });
+
+  cloudClient.auth.onAuthStateChange((_event, session) => {
+    currentUser = session?.user || null;
+    if (currentUser) loadCloudState();
+    render();
+  });
+}
+
+async function signIn() {
+  if (!cloudReady) return;
+  setSyncStatus("Entrando...");
+  const { error } = await cloudClient.auth.signInWithPassword({
+    email: authEmail.value.trim(),
+    password: authPassword.value,
+  });
+
+  if (error) {
+    setSyncStatus("No se pudo entrar");
+    return;
+  }
+
+  authPassword.value = "";
+}
+
+async function signUp() {
+  if (!cloudReady) return;
+  setSyncStatus("Creando cuenta...");
+  const { error } = await cloudClient.auth.signUp({
+    email: authEmail.value.trim(),
+    password: authPassword.value,
+  });
+
+  if (error) {
+    setSyncStatus("No se pudo crear");
+    return;
+  }
+
+  authPassword.value = "";
+  setSyncStatus("Cuenta creada");
+}
+
+async function signOut() {
+  if (!cloudReady) return;
+  await cloudClient.auth.signOut();
+  currentUser = null;
+  setSyncStatus("Sesion cerrada");
+  render();
+}
+
+async function loadCloudState() {
+  if (!currentUser || isLoadingCloudState) return;
+  isLoadingCloudState = true;
+  setSyncStatus("Sincronizando...");
+
+  const { data, error } = await cloudClient
+    .from("ritmo_data")
+    .select("data")
+    .eq("user_id", currentUser.id)
+    .maybeSingle();
+
+  if (error) {
+    setSyncStatus("Error de nube");
+    isLoadingCloudState = false;
+    return;
+  }
+
+  if (data?.data) {
+    const cloudState = normalizeState(data.data);
+    state.tasks = cloudState.tasks;
+    state.rewards = cloudState.rewards;
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  } else {
+    await saveCloudState();
+  }
+
+  isLoadingCloudState = false;
+  setSyncStatus("Sincronizado");
+  render();
+}
+
+function queueCloudSave() {
+  if (!cloudReady || !currentUser || isLoadingCloudState) return;
+  clearTimeout(cloudSaveTimer);
+  cloudSaveTimer = setTimeout(() => {
+    saveCloudState();
+  }, 500);
+}
+
+async function saveCloudState() {
+  if (!cloudReady || !currentUser) return;
+  setSyncStatus("Guardando...");
+
+  const { error } = await cloudClient.from("ritmo_data").upsert({
+    user_id: currentUser.id,
+    data: {
+      tasks: state.tasks,
+      rewards: state.rewards,
+      settings: state.settings,
+    },
+    updated_at: new Date().toISOString(),
+  });
+
+  setSyncStatus(error ? "Error de nube" : "Sincronizado");
+}
+
+function setSyncStatus(message) {
+  authStatus.textContent = message;
+}
+
+async function updateNotificationSettings() {
+  state.settings.notificationsEnabled = notificationsEnabled.checked;
+  state.settings.notificationIntervalMinutes = Number(notificationInterval.value);
+
+  if (state.settings.notificationsEnabled && "Notification" in window && Notification.permission === "default") {
+    await Notification.requestPermission();
+  }
+
+  saveState();
+  renderNotifications();
+}
+
+function scheduleReminderCheck() {
+  clearInterval(reminderTimer);
+  if (!state.settings.notificationsEnabled || !("Notification" in window) || Notification.permission !== "granted") return;
+
+  reminderTimer = setInterval(() => {
+    showPendingTaskNotification(false);
+  }, 60 * 1000);
+}
+
+function showPendingTaskNotification(force) {
+  if (!("Notification" in window) || Notification.permission !== "granted") return;
+
+  const pendingTasks = state.tasks.filter((task) => task.date === toDateKey(new Date()) && !task.completed);
+  if (pendingTasks.length === 0) {
+    if (force) {
+      new Notification("Ritmo Diario", {
+        body: "No tienes tareas pendientes para hoy.",
+      });
+    }
+    return;
+  }
+
+  const now = Date.now();
+  const intervalMs = state.settings.notificationIntervalMinutes * 60 * 1000;
+  if (!force && now - state.settings.lastNotificationAt < intervalMs) return;
+
+  state.settings.lastNotificationAt = now;
+  saveState();
+
+  const nextTask = pendingTasks[0];
+  const extra = pendingTasks.length > 1 ? ` y ${pendingTasks.length - 1} mas` : "";
+  new Notification("Tareas pendientes", {
+    body: `${nextTask.title}${extra}.`,
+  });
+}
+
+async function testNotification() {
+  if (!("Notification" in window)) return;
+  if (Notification.permission === "default") {
+    await Notification.requestPermission();
+  }
+
+  if (Notification.permission === "granted") {
+    showPendingTaskNotification(true);
+  }
+
+  renderNotifications();
+}
+
+function getDefaultSettings() {
+  return {
+    notificationsEnabled: false,
+    notificationIntervalMinutes: 120,
+    lastNotificationAt: 0,
+  };
+}
+
+function formatInterval(minutes) {
+  if (minutes < 60) return `${minutes} min`;
+  const hours = minutes / 60;
+  return `${hours} h`;
 }
 
 render();

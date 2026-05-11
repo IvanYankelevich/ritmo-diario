@@ -40,6 +40,38 @@ select {
   padding: 32px 0;
 }
 
+.auth-screen {
+  display: grid;
+  place-items: center;
+  min-height: 100vh;
+  padding: 20px;
+}
+
+.auth-screen[hidden],
+.app-shell[hidden] {
+  display: none;
+}
+
+.auth-card {
+  width: min(420px, 100%);
+  border: 1px solid rgba(221, 214, 202, 0.9);
+  border-radius: 8px;
+  background: rgba(255, 253, 248, 0.94);
+  box-shadow: var(--shadow);
+  padding: 22px;
+}
+
+.auth-card h1 {
+  margin-bottom: 10px;
+  font-size: 3.2rem;
+}
+
+.auth-status {
+  color: var(--muted);
+  font-weight: 750;
+  margin-bottom: 18px;
+}
+
 .topbar {
   display: grid;
   grid-template-columns: minmax(0, 0.8fr) minmax(320px, 1.2fr);
@@ -524,14 +556,23 @@ select:focus {
   display: none;
 }
 
-.reward-menu {
+.reward-menu,
+.account-menu,
+.notification-menu {
   border: 1px solid var(--line);
   border-radius: 8px;
   background: #faf5e9;
   padding: 0;
 }
 
-.reward-menu summary {
+.account-menu,
+.notification-menu {
+  margin-top: 10px;
+}
+
+.reward-menu summary,
+.account-menu summary,
+.notification-menu summary {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -542,11 +583,15 @@ select:focus {
   padding: 0 12px;
 }
 
-.reward-menu summary::-webkit-details-marker {
+.reward-menu summary::-webkit-details-marker,
+.account-menu summary::-webkit-details-marker,
+.notification-menu summary::-webkit-details-marker {
   display: none;
 }
 
-.reward-menu summary::after {
+.reward-menu summary::after,
+.account-menu summary::after,
+.notification-menu summary::after {
   content: "+";
   display: grid;
   place-items: center;
@@ -558,15 +603,21 @@ select:focus {
   font-weight: 900;
 }
 
-.reward-menu[open] summary::after {
+.reward-menu[open] summary::after,
+.account-menu[open] summary::after,
+.notification-menu[open] summary::after {
   content: "-";
 }
 
-.reward-menu summary span {
+.reward-menu summary span,
+.account-menu summary span,
+.notification-menu summary span {
   font-weight: 900;
 }
 
-.reward-menu summary small {
+.reward-menu summary small,
+.account-menu summary small,
+.notification-menu summary small {
   margin-left: auto;
   color: var(--muted);
   font-weight: 750;
@@ -579,6 +630,61 @@ select:focus {
   align-items: end;
   padding: 12px;
   border-top: 1px solid var(--line);
+}
+
+.auth-form {
+  display: grid;
+  gap: 12px;
+  padding: 12px;
+  border-top: 1px solid var(--line);
+}
+
+.standalone-auth {
+  padding: 0;
+  border-top: 0;
+}
+
+.notification-settings {
+  display: grid;
+  gap: 12px;
+  padding: 12px;
+  border-top: 1px solid var(--line);
+}
+
+.toggle-row {
+  display: grid;
+  grid-template-columns: 22px minmax(0, 1fr);
+  gap: 10px;
+  align-items: center;
+  color: var(--ink);
+  cursor: pointer;
+  font-size: 0.95rem;
+}
+
+.toggle-row input {
+  width: 18px;
+  min-height: 18px;
+  accent-color: var(--accent);
+}
+
+.auth-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.auth-actions button[hidden] {
+  display: none;
+}
+
+.auth-actions button:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.sign-out-top {
+  margin-top: 10px;
+  width: 100%;
 }
 
 .reward-list {
@@ -660,6 +766,18 @@ select:focus {
   .app-shell {
     width: min(100% - 18px, 620px);
     padding: 12px 0 18px;
+  }
+
+  .auth-screen {
+    padding: 12px;
+  }
+
+  .auth-card {
+    padding: 16px;
+  }
+
+  .auth-card h1 {
+    font-size: 2.4rem;
   }
 
   .topbar {
