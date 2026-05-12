@@ -200,11 +200,11 @@
         <div class="stats-header">
           <div>
             <p class="section-label">Estadisticas</p>
-            <h2 id="statsTitle">Esta semana</h2>
+            <h2 id="statsTitle">Ultimos 7 dias</h2>
           </div>
           <select id="statsPeriod" aria-label="Periodo de estadisticas">
-            <option value="week">Semanal</option>
-            <option value="month">Mensual</option>
+            <option value="7">Ultimos 7 dias</option>
+            <option value="30">Ultimos 30 dias</option>
           </select>
         </div>
 
@@ -223,7 +223,18 @@
           </div>
         </div>
 
-        <ul id="statsList" class="stats-list"></ul>
+        <div class="xp-chart" id="statsChart" aria-label="Grafico de experiencia"></div>
+
+        <div class="stats-insights">
+          <section>
+            <h3>Mas hechas</h3>
+            <ul id="topDoneList" class="stats-list"></ul>
+          </section>
+          <section>
+            <h3>Mas pendientes</h3>
+            <ul id="topMissedList" class="stats-list"></ul>
+          </section>
+        </div>
       </section>
 
       <div id="calendarOverlay" class="calendar-overlay" hidden>

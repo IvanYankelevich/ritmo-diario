@@ -72,7 +72,9 @@ const statsTitle = document.querySelector("#statsTitle");
 const statsDone = document.querySelector("#statsDone");
 const statsWonXp = document.querySelector("#statsWonXp");
 const statsLostXp = document.querySelector("#statsLostXp");
-const statsList = document.querySelector("#statsList");
+const statsChart = document.querySelector("#statsChart");
+const topDoneList = document.querySelector("#topDoneList");
+const topMissedList = document.querySelector("#topMissedList");
 const profileOverlay = document.querySelector("#profileOverlay");
 const profileForm = document.querySelector("#profileForm");
 const profileName = document.querySelector("#profileName");
@@ -466,39 +468,59 @@ function renderStats() {
   const wonXp = completed.reduce((total, task) => total + task.xp, 0);
   const lostXp = missed.reduce((total, task) => total + task.xp, 0);
 
-  statsTitle.textContent = statsPeriod.value === "week" ? "Semana seleccionada" : "Mes seleccionado";
+  statsTitle.textContent = statsPeriod.value === "30" ? "Ultimos 30 dias" : "Ultimos 7 dias";
   statsDone.textContent = completed.length;
   statsWonXp.textContent = wonXp;
   statsLostXp.textContent = lostXp;
-  statsList.innerHTML = "";
+  renderXpChart(wonXp, lostXp);
 
   const groups = getTaskStats(countedTasks);
-  if (groups.length === 0) {
+  renderTaskInsightList(topDoneList, groups.filter((item) => item.done > 0), "done");
+  renderTaskInsightList(topMissedList, groups.filter((item) => item.missed > 0), "missed");
+}
+
+function renderXpChart(wonXp, lostXp) {
+  const maxXp = Math.max(wonXp, lostXp, 1);
+  statsChart.innerHTML = "";
+
+  for (const item of [
+    { label: "XP ganada", value: wonXp, type: "won" },
+    { label: "XP perdida", value: lostXp, type: "lost" },
+  ]) {
+    const row = document.createElement("div");
+    row.className = `xp-chart-row ${item.type}`;
+    row.innerHTML = `
+      <div class="xp-chart-meta">
+        <span>${item.label}</span>
+        <strong>${item.value}</strong>
+      </div>
+      <div class="xp-chart-track">
+        <div class="xp-chart-fill" style="width: ${(item.value / maxXp) * 100}%"></div>
+      </div>
+    `;
+    statsChart.appendChild(row);
+  }
+}
+
+function renderTaskInsightList(list, items, type) {
+  list.innerHTML = "";
+  const sortedItems = [...items]
+    .sort((first, second) => second[type] - first[type] || first.title.localeCompare(second.title, "es"))
+    .slice(0, 5);
+
+  if (sortedItems.length === 0) {
     const empty = document.createElement("li");
     empty.className = "stats-empty";
-    empty.textContent = "Todavia no hay datos para este periodo.";
-    statsList.appendChild(empty);
+    empty.textContent = "Todavia no hay datos.";
+    list.appendChild(empty);
     return;
   }
 
-  for (const item of groups) {
+  for (const item of sortedItems) {
     const row = document.createElement("li");
-    row.className = "stats-item";
-
-    const title = document.createElement("strong");
-    title.textContent = item.title;
-
-    const meta = document.createElement("div");
-    meta.className = "stats-item-grid";
-    meta.innerHTML = `
-      <span><b>${item.done}</b><small>hechas</small></span>
-      <span><b>${item.wonXp}</b><small>XP ganada</small></span>
-      <span><b>${item.missed}</b><small>no hechas</small></span>
-      <span><b>${item.lostXp}</b><small>XP perdida</small></span>
-    `;
-
-    row.append(title, meta);
-    statsList.appendChild(row);
+    row.className = "stats-item simple";
+    row.innerHTML = `<strong>${item.title}</strong><span>${item[type]} veces</span>`;
+    list.appendChild(row);
   }
 }
 
@@ -594,16 +616,10 @@ function getRepeatDates(mode) {
 }
 
 function getStatsRange(period) {
-  const base = parseDateKey(selectedDate);
-  if (period === "month") {
-    const start = new Date(base.getFullYear(), base.getMonth(), 1);
-    const end = new Date(base.getFullYear(), base.getMonth() + 1, 0);
-    return { startKey: toDateKey(start), endKey: toDateKey(end) };
-  }
-
-  const start = getWeekStart(base);
-  const end = new Date(start);
-  end.setDate(start.getDate() + 6);
+  const days = period === "30" ? 30 : 7;
+  const end = new Date();
+  const start = new Date();
+  start.setDate(end.getDate() - (days - 1));
   return { startKey: toDateKey(start), endKey: toDateKey(end) };
 }
 
