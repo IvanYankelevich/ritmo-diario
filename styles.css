@@ -699,6 +699,8 @@ svg {
   display: grid;
   gap: 8px;
   margin: 10px 0 0;
+  max-height: 230px;
+  overflow: auto;
   padding: 0;
   list-style: none;
 }
@@ -854,7 +856,10 @@ select:focus {
 .stats-summary small,
 .stats-item small {
   color: var(--muted);
+  display: block;
   font-weight: 750;
+  line-height: 1.2;
+  overflow-wrap: anywhere;
 }
 
 .stats-list {
@@ -948,6 +953,8 @@ select:focus {
   display: grid;
   gap: 10px;
   margin: 16px 0 0;
+  max-height: 430px;
+  overflow: auto;
   padding: 0;
   list-style: none;
 }
@@ -1116,6 +1123,32 @@ select:focus {
   border-top: 1px solid var(--line);
 }
 
+.reward-suggestions-menu {
+  border-top: 1px solid var(--line);
+}
+
+.reward-suggestions-menu summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 40px;
+  cursor: pointer;
+  list-style: none;
+  padding: 0 12px;
+  color: var(--accent-strong);
+  font-weight: 900;
+}
+
+.reward-suggestions-menu summary::-webkit-details-marker {
+  display: none;
+}
+
+.reward-suggestions-menu .suggestion-list {
+  margin: 0;
+  max-height: 190px;
+  padding: 0 12px 12px;
+}
+
 .auth-form {
   display: grid;
   gap: 12px;
@@ -1219,6 +1252,8 @@ select:focus {
   display: grid;
   gap: 10px;
   margin: 16px 0 0;
+  max-height: 260px;
+  overflow: auto;
   padding: 0;
   list-style: none;
 }
@@ -1330,6 +1365,7 @@ body[data-theme="dark"] .xp-chart,
 body[data-theme="dark"] .view-tab,
 body[data-theme="dark"] .achievement-item,
 body[data-theme="dark"] .suggestion-item,
+body[data-theme="dark"] .reward-suggestions-menu,
 body[data-theme="dark"] .reward-menu,
 body[data-theme="dark"] .account-menu,
 body[data-theme="dark"] .notification-menu,
@@ -1501,8 +1537,24 @@ body[data-theme="dark"] .reminder-button.active {
     gap: 6px;
   }
 
+  .stats-summary {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
   .stats-row div {
     padding: 9px 7px;
+  }
+
+  .stats-summary div {
+    padding: 10px 8px;
+  }
+
+  .stats-summary span {
+    font-size: 1.28rem;
+  }
+
+  .stats-summary small {
+    font-size: 0.72rem;
   }
 
   .stats-row span {
@@ -1521,6 +1573,14 @@ body[data-theme="dark"] .reminder-button.active {
   .task-item {
     grid-template-columns: 38px minmax(0, 1fr) 38px 38px;
     gap: 6px;
+  }
+
+  .task-list {
+    max-height: 360px;
+  }
+
+  .reward-list {
+    max-height: 220px;
   }
 
   .xp-pill {

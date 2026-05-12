@@ -1,6 +1,7 @@
 const STORAGE_KEY = "ritmo-diario-state";
 const XP_PER_LEVEL = 100;
 const MAX_TASK_XP = 30;
+const DEMO_MODE = ["127.0.0.1", "localhost"].includes(window.location.hostname);
 const GENERIC_SUGGESTIONS = [
   { title: "Tomar agua", xp: 5 },
   { title: "Caminar 15 minutos", xp: 15 },
@@ -8,6 +9,16 @@ const GENERIC_SUGGESTIONS = [
   { title: "Ordenar un espacio", xp: 10 },
   { title: "Planear el dia", xp: 10 },
   { title: "Hacer ejercicio", xp: 25 },
+];
+const REWARD_SUGGESTIONS = [
+  "Cafe rico",
+  "Merienda favorita",
+  "30 minutos de serie",
+  "Comprar algo chico",
+  "Noche de juego",
+  "Pedir comida rica",
+  "Salida a caminar",
+  "Descanso sin culpa",
 ];
 const ACHIEVEMENTS = [
   {
@@ -87,6 +98,7 @@ const rewardForm = document.querySelector("#rewardForm");
 const rewardLevel = document.querySelector("#rewardLevel");
 const rewardTitle = document.querySelector("#rewardTitle");
 const rewardList = document.querySelector("#rewardList");
+const rewardSuggestionList = document.querySelector("#rewardSuggestionList");
 const authEmail = document.querySelector("#authEmail");
 const authPassword = document.querySelector("#authPassword");
 const signInButton = document.querySelector("#signInButton");
@@ -127,8 +139,8 @@ const statsView = document.querySelector("#statsView");
 const statsPeriod = document.querySelector("#statsPeriod");
 const statsTitle = document.querySelector("#statsTitle");
 const statsDone = document.querySelector("#statsDone");
-const statsWonXp = document.querySelector("#statsWonXp");
-const statsLostXp = document.querySelector("#statsLostXp");
+const statsStreak = document.querySelector("#statsStreak");
+const statsCompletion = document.querySelector("#statsCompletion");
 const statsChart = document.querySelector("#statsChart");
 const topDoneList = document.querySelector("#topDoneList");
 const topMissedList = document.querySelector("#topMissedList");
@@ -199,13 +211,7 @@ rewardForm.addEventListener("submit", (event) => {
 
   if (!title) return;
 
-  const existingReward = state.rewards.find((reward) => reward.level === level);
-  if (existingReward) {
-    existingReward.title = title;
-  } else {
-    state.rewards.push({ level, title });
-  }
-
+  saveReward(level, title);
   rewardTitle.value = "";
   saveState();
   render();
@@ -407,6 +413,11 @@ function setActiveView(view) {
 }
 
 function renderProfilePrompt() {
+  if (DEMO_MODE) {
+    profileOverlay.hidden = true;
+    return;
+  }
+
   const hasName = Boolean(state.settings.displayName);
   profileOverlay.hidden = hasName;
   if (!hasName) profileName.focus();
@@ -560,15 +571,20 @@ function renderSuggestions() {
 
 function updateAchievements() {
   let changed = false;
+  const unlockedTitles = [];
 
   for (const achievement of ACHIEVEMENTS) {
     if (state.achievements.includes(achievement.id)) continue;
     if (!achievement.isUnlocked()) continue;
     state.achievements.push(achievement.id);
+    unlockedTitles.push(`${achievement.title} (+${achievement.xp} XP)`);
     changed = true;
   }
 
-  if (changed) saveState();
+  if (changed) {
+    saveState();
+    showToast("Logro desbloqueado", unlockedTitles.join(", "));
+  }
 }
 
 function renderAchievements() {
@@ -598,16 +614,18 @@ function renderStats() {
   const range = getStatsRange(statsPeriod.value);
   const todayKey = toDateKey(new Date());
   const rangeTasks = state.tasks.filter((task) => task.date >= range.startKey && task.date <= range.endKey);
-  const countedTasks = rangeTasks.filter((task) => task.completed || task.date <= todayKey);
+  const countedTasks = rangeTasks.filter((task) => task.completed || task.date < todayKey);
   const completed = countedTasks.filter((task) => task.completed);
   const missed = countedTasks.filter((task) => !task.completed);
   const wonXp = completed.reduce((total, task) => total + task.xp, 0);
   const lostXp = missed.reduce((total, task) => total + task.xp, 0);
+  const totalCountable = completed.length + missed.length;
+  const completionRate = totalCountable > 0 ? Math.round((completed.length / totalCountable) * 100) : 0;
 
   statsTitle.textContent = statsPeriod.value === "30" ? "Ultimos 30 dias" : "Ultimos 7 dias";
   statsDone.textContent = completed.length;
-  statsWonXp.textContent = wonXp;
-  statsLostXp.textContent = lostXp;
+  statsStreak.textContent = getCurrentStreak();
+  statsCompletion.textContent = `${completionRate}%`;
   renderXpChart(wonXp, lostXp);
 
   const groups = getTaskStats(countedTasks);
@@ -661,8 +679,8 @@ function renderTaskInsightList(list, items, type) {
 }
 
 function renderProgress() {
+  const level = getCurrentLevel();
   const totalXp = getTotalXp();
-  const level = Math.floor(totalXp / XP_PER_LEVEL) + 1;
   const levelXp = totalXp % XP_PER_LEVEL;
 
   levelLabel.textContent = `Nivel ${level}`;
@@ -673,8 +691,9 @@ function renderProgress() {
 }
 
 function renderRewards() {
+  const currentLevel = getCurrentLevel();
   rewardLevel.innerHTML = "";
-  for (let level = 2; level <= 100; level += 1) {
+  for (let level = Math.max(2, currentLevel + 1); level <= 100; level += 1) {
     const option = document.createElement("option");
     option.value = level;
     option.textContent = `Nivel ${level}`;
@@ -682,12 +701,16 @@ function renderRewards() {
   }
 
   rewardList.innerHTML = "";
-  const rewards = [...state.rewards].sort((first, second) => first.level - second.level);
+  rewardSuggestionList.innerHTML = "";
+  renderRewardSuggestions();
+  const rewards = [...state.rewards]
+    .filter((reward) => reward.level > currentLevel)
+    .sort((first, second) => first.level - second.level);
 
   if (rewards.length === 0) {
     const empty = document.createElement("li");
     empty.className = "reward-empty";
-    empty.textContent = "Todavia no hay premios cargados.";
+    empty.textContent = "No hay premios pendientes.";
     rewardList.appendChild(empty);
     return;
   }
@@ -716,6 +739,43 @@ function renderRewards() {
 
     item.append(meta, title, deleteButton);
     rewardList.appendChild(item);
+  }
+}
+
+function renderRewardSuggestions() {
+  const usedRewards = new Set(state.rewards.map((reward) => reward.title.trim().toLowerCase()));
+
+  for (const suggestion of REWARD_SUGGESTIONS.filter((item) => !usedRewards.has(item.toLowerCase()))) {
+    const item = document.createElement("li");
+    item.className = "suggestion-item";
+
+    const text = document.createElement("span");
+    text.textContent = suggestion;
+
+    const addButton = document.createElement("button");
+    addButton.type = "button";
+    addButton.className = "add-suggestion-button";
+    addButton.title = "Agregar premio";
+    addButton.setAttribute("aria-label", `Agregar ${suggestion}`);
+    addButton.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>';
+    addButton.addEventListener("click", () => {
+      saveReward(Number(rewardLevel.value), suggestion);
+      rewardTitle.value = "";
+      saveState();
+      render();
+    });
+
+    item.append(text, addButton);
+    rewardSuggestionList.appendChild(item);
+  }
+}
+
+function saveReward(level, title) {
+  const existingReward = state.rewards.find((reward) => reward.level === level);
+  if (existingReward) {
+    existingReward.title = title;
+  } else {
+    state.rewards.push({ level, title });
   }
 }
 
@@ -785,8 +845,25 @@ function getTotalXp() {
   return getTaskXp() + getAchievementXp();
 }
 
+function getCurrentLevel() {
+  return Math.floor(getTotalXp() / XP_PER_LEVEL) + 1;
+}
+
 function getCompletedDayCount() {
   return new Set(getCompletedTasks().map((task) => task.date)).size;
+}
+
+function getCurrentStreak() {
+  const completedDays = new Set(getCompletedTasks().map((task) => task.date));
+  let streak = 0;
+  const date = new Date();
+
+  while (completedDays.has(toDateKey(date))) {
+    streak += 1;
+    date.setDate(date.getDate() - 1);
+  }
+
+  return streak;
 }
 
 function hasPerfectDay() {
@@ -821,6 +898,46 @@ function addTask({ date, title, xp }) {
     reminder: false,
     createdAt: Date.now() + state.tasks.length,
   });
+}
+
+function seedDemoData() {
+  if (!DEMO_MODE || state.settings.demoSeeded) return;
+
+  const today = new Date();
+  const demoTasks = [
+    ["Tomar agua", 5, [0, 1, 2, 3, 4, 5, 6], [0, 1, 2, 3, 5, 6]],
+    ["Leer 10 minutos", 15, [0, 1, 2, 4, 6], [0, 2, 4]],
+    ["Caminar 15 minutos", 15, [0, 1, 3, 5], [1, 3]],
+    ["Ordenar un espacio", 10, [0, 2, 5], [0, 5]],
+  ];
+
+  for (const [title, xp, days, completedDays] of demoTasks) {
+    for (const offset of days) {
+      const date = new Date(today);
+      date.setDate(today.getDate() - offset);
+      const key = toDateKey(date);
+      const completed = completedDays.includes(offset);
+      const alreadyExists = state.tasks.some((task) => task.date === key && normalizeTaskTitle(task.title) === normalizeTaskTitle(title));
+      if (alreadyExists) continue;
+      state.tasks.push({
+        id: createId(),
+        date: key,
+        title,
+        xp,
+        completed,
+        reminder: offset === 0 && !completed,
+        createdAt: Date.now() - offset * 86400000 + state.tasks.length,
+      });
+    }
+  }
+
+  state.rewards = state.rewards.length
+    ? state.rewards
+    : [
+        { level: 2, title: "Cafe rico" },
+        { level: 3, title: "Capitulo de serie" },
+      ];
+  state.settings.demoSeeded = true;
 }
 
 function getRepeatDates(mode) {
@@ -941,6 +1058,17 @@ function createId() {
 }
 
 function initCloudSync() {
+  if (DEMO_MODE) {
+    currentUser = { id: "demo-local", email: "demo@ritmo.local" };
+    cloudReady = false;
+    if (!state.settings.displayName) state.settings.displayName = "Demo";
+    seedDemoData();
+    saveState();
+    render();
+    showToast("Modo prueba", "Estas viendo la app sin iniciar sesion.");
+    return;
+  }
+
   const config = window.RITMO_SUPABASE || {};
   const hasConfig = Boolean(config.url && config.anonKey && window.supabase);
 
@@ -1003,6 +1131,11 @@ async function signUp() {
 }
 
 async function signOut() {
+  if (DEMO_MODE) {
+    showToast("Modo prueba", "En esta vista local no hace falta cerrar sesion.");
+    return;
+  }
+
   if (!cloudReady) return;
   await cloudClient.auth.signOut();
   currentUser = null;
