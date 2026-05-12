@@ -50,6 +50,7 @@ let cloudReady = false;
 let cloudClient = null;
 let cloudSaveTimer = null;
 let reminderTimer = null;
+let toastTimer = null;
 let isLoadingCloudState = false;
 let authMode = "signin";
 let lastRenderedLevel = null;
@@ -92,6 +93,9 @@ const notificationsEnabled = document.querySelector("#notificationsEnabled");
 const notificationInterval = document.querySelector("#notificationInterval");
 const notificationStatus = document.querySelector("#notificationStatus");
 const testNotificationButton = document.querySelector("#testNotificationButton");
+const appToast = document.querySelector("#appToast");
+const toastTitle = document.querySelector("#toastTitle");
+const toastBody = document.querySelector("#toastBody");
 const themeToggleButton = document.querySelector("#themeToggleButton");
 const themeIcon = document.querySelector("#themeIcon");
 const achievementCount = document.querySelector("#achievementCount");
@@ -345,11 +349,12 @@ function renderAuth() {
 function renderNotifications() {
   notificationsEnabled.checked = Boolean(state.settings.notificationsEnabled);
   notificationInterval.value = String(state.settings.notificationIntervalMinutes);
+  notificationsEnabled.disabled = false;
+  testNotificationButton.disabled = false;
 
   if (!("Notification" in window)) {
-    notificationStatus.textContent = "No disponible";
-    notificationsEnabled.disabled = true;
-    testNotificationButton.disabled = true;
+    notificationStatus.textContent = state.settings.notificationsEnabled ? "En la app" : "Apagados";
+    scheduleReminderCheck();
     return;
   }
 
@@ -358,7 +363,7 @@ function renderNotifications() {
   } else if (Notification.permission === "granted") {
     notificationStatus.textContent = `Cada ${formatInterval(state.settings.notificationIntervalMinutes)}`;
   } else if (Notification.permission === "denied") {
-    notificationStatus.textContent = "Bloqueados";
+    notificationStatus.textContent = "En la app";
   } else {
     notificationStatus.textContent = "Pedir permiso";
   }
@@ -1041,7 +1046,7 @@ async function updateNotificationSettings() {
 
 function scheduleReminderCheck() {
   clearInterval(reminderTimer);
-  if (!state.settings.notificationsEnabled || !("Notification" in window) || Notification.permission !== "granted") return;
+  if (!state.settings.notificationsEnabled) return;
 
   reminderTimer = setInterval(() => {
     showPendingTaskNotification(false);
@@ -1049,14 +1054,10 @@ function scheduleReminderCheck() {
 }
 
 function showPendingTaskNotification(force) {
-  if (!("Notification" in window) || Notification.permission !== "granted") return;
-
   const pendingTasks = state.tasks.filter((task) => task.date === toDateKey(new Date()) && !task.completed);
   if (pendingTasks.length === 0) {
     if (force) {
-      new Notification("Ritmo Diario", {
-        body: "No tienes tareas pendientes para hoy.",
-      });
+      sendReminder("Ritmo Diario", "No tienes tareas pendientes para hoy.");
     }
     return;
   }
@@ -1070,22 +1071,51 @@ function showPendingTaskNotification(force) {
 
   const nextTask = pendingTasks[0];
   const extra = pendingTasks.length > 1 ? ` y ${pendingTasks.length - 1} mas` : "";
-  new Notification("Tareas pendientes", {
-    body: `${nextTask.title}${extra}.`,
-  });
+  sendReminder("Tareas pendientes", `${nextTask.title}${extra}.`);
 }
 
 async function testNotification() {
-  if (!("Notification" in window)) return;
-  if (Notification.permission === "default") {
-    await Notification.requestPermission();
+  if ("Notification" in window && Notification.permission === "default") {
+    const permission = await Notification.requestPermission();
+    if (permission !== "granted") {
+      showToast("Recordatorios en la app", "El navegador no habilito notificaciones del sistema.");
+    }
+  } else if (!("Notification" in window)) {
+    showToast("Recordatorios en la app", "Este navegador no permite notificaciones del sistema.");
   }
 
-  if (Notification.permission === "granted") {
-    showPendingTaskNotification(true);
-  }
+  showPendingTaskNotification(true);
 
   renderNotifications();
+}
+
+function sendReminder(title, body) {
+  let browserNotificationShown = false;
+
+  if ("Notification" in window && Notification.permission === "granted") {
+    try {
+      new Notification(title, {
+        body,
+        tag: "ritmo-diario-reminder",
+        renotify: true,
+      });
+      browserNotificationShown = true;
+    } catch {
+      browserNotificationShown = false;
+    }
+  }
+
+  showToast(browserNotificationShown ? "Recordatorio enviado" : title, browserNotificationShown ? body : body);
+}
+
+function showToast(title, body) {
+  clearTimeout(toastTimer);
+  toastTitle.textContent = title;
+  toastBody.textContent = body;
+  appToast.hidden = false;
+  toastTimer = setTimeout(() => {
+    appToast.hidden = true;
+  }, 5200);
 }
 
 function getDefaultSettings() {

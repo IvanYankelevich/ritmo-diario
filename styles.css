@@ -1039,6 +1039,35 @@ select:focus {
   border-top: 1px solid var(--line);
 }
 
+.app-toast {
+  position: fixed;
+  left: 50%;
+  bottom: 18px;
+  z-index: 30;
+  display: grid;
+  gap: 3px;
+  width: min(420px, calc(100% - 28px));
+  transform: translateX(-50%);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--panel);
+  box-shadow: var(--shadow);
+  padding: 12px 14px;
+}
+
+.app-toast[hidden] {
+  display: none;
+}
+
+.app-toast strong {
+  color: var(--accent-strong);
+}
+
+.app-toast span {
+  color: var(--muted);
+  font-weight: 750;
+}
+
 .toggle-row {
   display: grid;
   grid-template-columns: 22px minmax(0, 1fr);
