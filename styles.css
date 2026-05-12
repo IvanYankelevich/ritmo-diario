@@ -651,6 +651,86 @@ svg {
   text-transform: capitalize;
 }
 
+.task-heading-actions {
+  position: relative;
+  display: inline-grid;
+  grid-auto-flow: column;
+  gap: 8px;
+  align-items: center;
+}
+
+.suggestions-menu {
+  position: relative;
+}
+
+.suggestions-menu summary {
+  display: inline-grid;
+  min-height: 32px;
+  place-items: center;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fffaf0;
+  color: var(--accent-strong);
+  cursor: pointer;
+  font-size: 0.78rem;
+  font-weight: 900;
+  list-style: none;
+  padding: 0 9px;
+}
+
+.suggestions-menu summary::-webkit-details-marker {
+  display: none;
+}
+
+.suggestions-card {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  z-index: 7;
+  width: min(320px, calc(100vw - 26px));
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--panel);
+  box-shadow: var(--shadow);
+  padding: 12px;
+}
+
+.suggestion-list {
+  display: grid;
+  gap: 8px;
+  margin: 10px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.suggestion-item {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 34px;
+  gap: 8px;
+  align-items: center;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #faf5e9;
+  padding: 8px;
+}
+
+.suggestion-item span {
+  overflow-wrap: anywhere;
+  font-weight: 800;
+}
+
+.add-suggestion-button {
+  display: inline-grid;
+  width: 34px;
+  height: 34px;
+  place-items: center;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fffaf0;
+  color: var(--accent-strong);
+  cursor: pointer;
+}
+
 .field {
   display: grid;
   gap: 7px;
@@ -874,8 +954,8 @@ select:focus {
 
 .task-item {
   display: grid;
-  grid-template-columns: 42px minmax(0, 1fr) auto 42px;
-  gap: 12px;
+  grid-template-columns: 42px minmax(0, 1fr) auto 42px 42px;
+  gap: 8px;
   align-items: center;
   border: 1px solid var(--line);
   border-radius: 8px;
@@ -888,7 +968,8 @@ select:focus {
 }
 
 .check-button,
-.delete-button {
+.delete-button,
+.reminder-button {
   width: 42px;
   height: 42px;
   border-radius: 8px;
@@ -902,6 +983,21 @@ select:focus {
 
 .delete-button {
   color: var(--rose);
+}
+
+.reminder-button {
+  display: inline-grid;
+  place-items: center;
+  border: 1px solid var(--line);
+  background: #fffaf0;
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.reminder-button.active {
+  border-color: var(--gold);
+  background: rgba(199, 144, 47, 0.18);
+  color: var(--gold);
 }
 
 .task-title {
@@ -1213,10 +1309,13 @@ select:focus {
 
 body[data-theme="dark"] .mini-button,
 body[data-theme="dark"] .achievements-menu summary,
+body[data-theme="dark"] .suggestions-menu summary,
+body[data-theme="dark"] .add-suggestion-button,
 body[data-theme="dark"] .icon-button,
 body[data-theme="dark"] .secondary-button,
 body[data-theme="dark"] .delete-button,
 body[data-theme="dark"] .check-button,
+body[data-theme="dark"] .reminder-button,
 body[data-theme="dark"] input,
 body[data-theme="dark"] select,
 body[data-theme="dark"] .password-field,
@@ -1230,6 +1329,7 @@ body[data-theme="dark"] .stats-empty,
 body[data-theme="dark"] .xp-chart,
 body[data-theme="dark"] .view-tab,
 body[data-theme="dark"] .achievement-item,
+body[data-theme="dark"] .suggestion-item,
 body[data-theme="dark"] .reward-menu,
 body[data-theme="dark"] .account-menu,
 body[data-theme="dark"] .notification-menu,
@@ -1248,6 +1348,11 @@ body[data-theme="dark"] .view-tab.active {
 
 body[data-theme="dark"] .xp-chart-track {
   background: #333930;
+}
+
+body[data-theme="dark"] .reminder-button.active {
+  background: rgba(217, 175, 91, 0.16);
+  color: var(--gold);
 }
 
 .compact-menu {
@@ -1414,11 +1519,38 @@ body[data-theme="dark"] .xp-chart-track {
   }
 
   .task-item {
-    grid-template-columns: 38px minmax(0, 1fr) 38px;
+    grid-template-columns: 38px minmax(0, 1fr) 38px 38px;
+    gap: 6px;
   }
 
   .xp-pill {
     grid-column: 2;
     width: max-content;
+  }
+
+  .check-button,
+  .delete-button,
+  .reminder-button {
+    width: 38px;
+    height: 38px;
+  }
+
+  .reminder-button {
+    grid-column: 3;
+    grid-row: 2;
+  }
+
+  .delete-button {
+    grid-column: 4;
+    grid-row: 2;
+  }
+
+  .task-heading-actions {
+    grid-auto-flow: row;
+    justify-items: end;
+  }
+
+  .suggestions-card {
+    right: 0;
   }
 }

@@ -119,7 +119,7 @@
         <div class="notification-settings">
           <label class="toggle-row">
             <input id="notificationsEnabled" type="checkbox" />
-            <span>Recordarme tareas pendientes</span>
+            <span>Recordarme tareas con campanita</span>
           </label>
           <div class="field">
             <label for="notificationInterval">Frecuencia</label>
@@ -169,7 +169,16 @@
           <section class="task-panel" aria-label="Tareas">
             <div class="task-day-label">
               <span>Tareas para</span>
-              <strong id="taskDateText">Hoy</strong>
+              <div class="task-heading-actions">
+                <strong id="taskDateText">Hoy</strong>
+                <details class="suggestions-menu" id="suggestionsMenu">
+                  <summary>Sugerencias</summary>
+                  <div class="suggestions-card">
+                    <strong>Agregar rapido</strong>
+                    <ul id="suggestionList" class="suggestion-list"></ul>
+                  </div>
+                </details>
+              </div>
             </div>
 
             <form id="taskForm" class="task-form">

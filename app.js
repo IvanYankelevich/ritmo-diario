@@ -1,6 +1,14 @@
 const STORAGE_KEY = "ritmo-diario-state";
 const XP_PER_LEVEL = 100;
 const MAX_TASK_XP = 30;
+const GENERIC_SUGGESTIONS = [
+  { title: "Tomar agua", xp: 5 },
+  { title: "Caminar 15 minutos", xp: 15 },
+  { title: "Leer 10 minutos", xp: 15 },
+  { title: "Ordenar un espacio", xp: 10 },
+  { title: "Planear el dia", xp: 10 },
+  { title: "Hacer ejercicio", xp: 25 },
+];
 const ACHIEVEMENTS = [
   {
     id: "first-task",
@@ -74,6 +82,7 @@ const taskRepeat = document.querySelector("#taskRepeat");
 const taskList = document.querySelector("#taskList");
 const emptyState = document.querySelector("#emptyState");
 const taskDateText = document.querySelector("#taskDateText");
+const suggestionList = document.querySelector("#suggestionList");
 const rewardForm = document.querySelector("#rewardForm");
 const rewardLevel = document.querySelector("#rewardLevel");
 const rewardTitle = document.querySelector("#rewardTitle");
@@ -278,6 +287,7 @@ function normalizeState(saved) {
     tasks: saved.tasks.map((task) => ({
       ...task,
       xp: clamp(Number(task.xp), 5, MAX_TASK_XP),
+      reminder: Boolean(task.reminder),
     })),
     rewards: Array.isArray(saved.rewards)
       ? saved.rewards
@@ -311,6 +321,7 @@ function render() {
   renderWeek();
   renderCalendar();
   renderTasks();
+  renderSuggestions();
   updateAchievements();
   renderAchievements();
   renderProgress();
@@ -488,6 +499,14 @@ function renderTasks() {
     xp.className = "xp-pill";
     xp.textContent = `${task.xp} XP`;
 
+    const reminderButton = document.createElement("button");
+    reminderButton.type = "button";
+    reminderButton.className = `reminder-button${task.reminder ? " active" : ""}`;
+    reminderButton.title = task.reminder ? "Quitar recordatorio" : "Recordar esta tarea";
+    reminderButton.setAttribute("aria-label", reminderButton.title);
+    reminderButton.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 21h4M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9"/></svg>';
+    reminderButton.addEventListener("click", () => toggleTaskReminder(task));
+
     const deleteButton = document.createElement("button");
     deleteButton.type = "button";
     deleteButton.className = "delete-button";
@@ -501,7 +520,7 @@ function renderTasks() {
       render();
     });
 
-    item.append(checkButton, title, xp, deleteButton);
+    item.append(checkButton, title, xp, reminderButton, deleteButton);
     taskList.appendChild(item);
   }
 
@@ -509,6 +528,34 @@ function renderTasks() {
   completedCount.textContent = completed.length;
   pendingCount.textContent = tasks.length - completed.length;
   dayXp.textContent = completed.reduce((total, task) => total + task.xp, 0);
+}
+
+function renderSuggestions() {
+  suggestionList.innerHTML = "";
+  const suggestions = getTaskSuggestions();
+
+  for (const suggestion of suggestions) {
+    const item = document.createElement("li");
+    item.className = "suggestion-item";
+
+    const text = document.createElement("span");
+    text.textContent = suggestion.title;
+
+    const addButton = document.createElement("button");
+    addButton.type = "button";
+    addButton.className = "add-suggestion-button";
+    addButton.title = "Agregar tarea";
+    addButton.setAttribute("aria-label", `Agregar ${suggestion.title}`);
+    addButton.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>';
+    addButton.addEventListener("click", () => {
+      addTask({ date: selectedDate, title: suggestion.title, xp: suggestion.xp });
+      saveState();
+      render();
+    });
+
+    item.append(text, addButton);
+    suggestionList.appendChild(item);
+  }
 }
 
 function updateAchievements() {
@@ -678,6 +725,47 @@ function getSelectedTasks() {
     .sort((first, second) => first.createdAt - second.createdAt);
 }
 
+function getTaskSuggestions() {
+  const selectedTitles = new Set(getSelectedTasks().map((task) => normalizeTaskTitle(task.title)));
+  const suggestions = new Map();
+
+  for (const suggestion of GENERIC_SUGGESTIONS) {
+    suggestions.set(normalizeTaskTitle(suggestion.title), suggestion);
+  }
+
+  const previousTasks = [...state.tasks]
+    .filter((task) => task.date < selectedDate)
+    .sort((first, second) => second.createdAt - first.createdAt);
+
+  for (const task of previousTasks) {
+    const key = normalizeTaskTitle(task.title);
+    if (!key || suggestions.has(key)) continue;
+    suggestions.set(key, { title: task.title, xp: task.xp });
+  }
+
+  return [...suggestions.values()]
+    .filter((suggestion) => !selectedTitles.has(normalizeTaskTitle(suggestion.title)))
+    .slice(0, 8);
+}
+
+function normalizeTaskTitle(title) {
+  return String(title || "").trim().toLowerCase();
+}
+
+async function toggleTaskReminder(task) {
+  task.reminder = !task.reminder;
+
+  if (task.reminder) {
+    state.settings.notificationsEnabled = true;
+    if ("Notification" in window && Notification.permission === "default") {
+      await Notification.requestPermission();
+    }
+  }
+
+  saveState();
+  render();
+}
+
 function getCompletedTasks() {
   return state.tasks.filter((task) => task.completed);
 }
@@ -730,6 +818,7 @@ function addTask({ date, title, xp }) {
     title,
     xp: clamp(Number(xp), 5, MAX_TASK_XP),
     completed: false,
+    reminder: false,
     createdAt: Date.now() + state.tasks.length,
   });
 }
@@ -1054,10 +1143,12 @@ function scheduleReminderCheck() {
 }
 
 function showPendingTaskNotification(force) {
-  const pendingTasks = state.tasks.filter((task) => task.date === toDateKey(new Date()) && !task.completed);
+  const pendingTasks = state.tasks.filter(
+    (task) => task.date === toDateKey(new Date()) && !task.completed && task.reminder,
+  );
   if (pendingTasks.length === 0) {
     if (force) {
-      sendReminder("Ritmo Diario", "No tienes tareas pendientes para hoy.");
+      sendReminder("Ritmo Diario", "No tienes tareas con campanita activa para hoy.");
     }
     return;
   }
