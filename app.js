@@ -13,6 +13,7 @@ let authMode = "signin";
 let lastRenderedLevel = null;
 let selectedDate = toDateKey(new Date());
 let visibleMonth = new Date();
+let activeView = "tasks";
 
 const authScreen = document.querySelector("#authScreen");
 const appScreen = document.querySelector("#appScreen");
@@ -62,6 +63,19 @@ const nextRewardText = document.querySelector("#nextRewardText");
 const completedCount = document.querySelector("#completedCount");
 const pendingCount = document.querySelector("#pendingCount");
 const dayXp = document.querySelector("#dayXp");
+const tasksTab = document.querySelector("#tasksTab");
+const statsTab = document.querySelector("#statsTab");
+const tasksView = document.querySelector("#tasksView");
+const statsView = document.querySelector("#statsView");
+const statsPeriod = document.querySelector("#statsPeriod");
+const statsTitle = document.querySelector("#statsTitle");
+const statsDone = document.querySelector("#statsDone");
+const statsWonXp = document.querySelector("#statsWonXp");
+const statsLostXp = document.querySelector("#statsLostXp");
+const statsList = document.querySelector("#statsList");
+const profileOverlay = document.querySelector("#profileOverlay");
+const profileForm = document.querySelector("#profileForm");
+const profileName = document.querySelector("#profileName");
 
 document.querySelector("#prevMonth").addEventListener("click", () => {
   visibleMonth = new Date(visibleMonth.getFullYear(), visibleMonth.getMonth() - 1, 1);
@@ -148,6 +162,17 @@ notificationsEnabled.addEventListener("change", () => updateNotificationSettings
 notificationInterval.addEventListener("change", () => updateNotificationSettings());
 testNotificationButton.addEventListener("click", () => testNotification());
 themeToggleButton.addEventListener("click", () => toggleTheme());
+tasksTab.addEventListener("click", () => setActiveView("tasks"));
+statsTab.addEventListener("click", () => setActiveView("stats"));
+statsPeriod.addEventListener("change", () => renderStats());
+profileForm.addEventListener("submit", (event) => {
+  event.preventDefault();
+  const name = profileName.value.trim();
+  if (!name) return;
+  state.settings.displayName = name;
+  saveState();
+  render();
+});
 closeLevelUpButton.addEventListener("click", () => {
   levelUpOverlay.hidden = true;
 });
@@ -211,6 +236,7 @@ function normalizeState(saved) {
     settings: {
       ...getDefaultSettings(),
       ...(saved.settings || {}),
+      displayName: String(saved.settings?.displayName || "").trim(),
     },
   };
 }
@@ -236,6 +262,9 @@ function render() {
   renderProgress();
   renderRewards();
   renderNotifications();
+  renderView();
+  renderProfilePrompt();
+  renderStats();
 }
 
 function renderAuth() {
@@ -288,12 +317,33 @@ function renderNotifications() {
 }
 
 function renderHeader() {
-  selectedDateTitle.textContent = formatSelectedDate(selectedDate);
+  const name = state.settings.displayName || "vos";
+  selectedDateTitle.textContent = `Hola ${name}, que hacemos hoy?`;
   taskDateText.textContent = formatSelectedDate(selectedDate);
   monthTitle.textContent = visibleMonth.toLocaleDateString("es-AR", {
     month: "long",
     year: "numeric",
   });
+}
+
+function renderView() {
+  const showingStats = activeView === "stats";
+  tasksView.hidden = showingStats;
+  statsView.hidden = !showingStats;
+  tasksTab.classList.toggle("active", !showingStats);
+  statsTab.classList.toggle("active", showingStats);
+}
+
+function setActiveView(view) {
+  activeView = view;
+  renderView();
+  if (view === "stats") renderStats();
+}
+
+function renderProfilePrompt() {
+  const hasName = Boolean(state.settings.displayName);
+  profileOverlay.hidden = hasName;
+  if (!hasName) profileName.focus();
 }
 
 function renderWeek() {
@@ -406,6 +456,52 @@ function renderTasks() {
   dayXp.textContent = completed.reduce((total, task) => total + task.xp, 0);
 }
 
+function renderStats() {
+  const range = getStatsRange(statsPeriod.value);
+  const todayKey = toDateKey(new Date());
+  const rangeTasks = state.tasks.filter((task) => task.date >= range.startKey && task.date <= range.endKey);
+  const countedTasks = rangeTasks.filter((task) => task.completed || task.date <= todayKey);
+  const completed = countedTasks.filter((task) => task.completed);
+  const missed = countedTasks.filter((task) => !task.completed);
+  const wonXp = completed.reduce((total, task) => total + task.xp, 0);
+  const lostXp = missed.reduce((total, task) => total + task.xp, 0);
+
+  statsTitle.textContent = statsPeriod.value === "week" ? "Semana seleccionada" : "Mes seleccionado";
+  statsDone.textContent = completed.length;
+  statsWonXp.textContent = wonXp;
+  statsLostXp.textContent = lostXp;
+  statsList.innerHTML = "";
+
+  const groups = getTaskStats(countedTasks);
+  if (groups.length === 0) {
+    const empty = document.createElement("li");
+    empty.className = "stats-empty";
+    empty.textContent = "Todavia no hay datos para este periodo.";
+    statsList.appendChild(empty);
+    return;
+  }
+
+  for (const item of groups) {
+    const row = document.createElement("li");
+    row.className = "stats-item";
+
+    const title = document.createElement("strong");
+    title.textContent = item.title;
+
+    const meta = document.createElement("div");
+    meta.className = "stats-item-grid";
+    meta.innerHTML = `
+      <span><b>${item.done}</b><small>hechas</small></span>
+      <span><b>${item.wonXp}</b><small>XP ganada</small></span>
+      <span><b>${item.missed}</b><small>no hechas</small></span>
+      <span><b>${item.lostXp}</b><small>XP perdida</small></span>
+    `;
+
+    row.append(title, meta);
+    statsList.appendChild(row);
+  }
+}
+
 function renderProgress() {
   const totalXp = state.tasks
     .filter((task) => task.completed)
@@ -495,6 +591,52 @@ function getRepeatDates(mode) {
   if (mode === "week") return getCurrentWeekKeys();
   if (mode === "30days") return getNextDaysKeys(30);
   return [selectedDate];
+}
+
+function getStatsRange(period) {
+  const base = parseDateKey(selectedDate);
+  if (period === "month") {
+    const start = new Date(base.getFullYear(), base.getMonth(), 1);
+    const end = new Date(base.getFullYear(), base.getMonth() + 1, 0);
+    return { startKey: toDateKey(start), endKey: toDateKey(end) };
+  }
+
+  const start = getWeekStart(base);
+  const end = new Date(start);
+  end.setDate(start.getDate() + 6);
+  return { startKey: toDateKey(start), endKey: toDateKey(end) };
+}
+
+function getTaskStats(tasks) {
+  const groups = new Map();
+
+  for (const task of tasks) {
+    const key = task.title.trim().toLowerCase();
+    if (!groups.has(key)) {
+      groups.set(key, {
+        title: task.title,
+        done: 0,
+        missed: 0,
+        wonXp: 0,
+        lostXp: 0,
+      });
+    }
+
+    const group = groups.get(key);
+    if (task.completed) {
+      group.done += 1;
+      group.wonXp += task.xp;
+    } else {
+      group.missed += 1;
+      group.lostXp += task.xp;
+    }
+  }
+
+  return [...groups.values()].sort((first, second) => {
+    const impact = second.wonXp + second.lostXp - (first.wonXp + first.lostXp);
+    if (impact !== 0) return impact;
+    return first.title.localeCompare(second.title, "es");
+  });
 }
 
 function getCurrentWeekKeys() {
@@ -659,6 +801,7 @@ async function loadCloudState() {
     const cloudState = normalizeState(data.data);
     state.tasks = cloudState.tasks;
     state.rewards = cloudState.rewards;
+    state.settings = cloudState.settings;
     localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
   } else {
     await saveCloudState();
@@ -814,6 +957,7 @@ function getDefaultSettings() {
     lastNotificationAt: 0,
     theme: "light",
     highestLevelCelebrated: 1,
+    displayName: "",
   };
 }
 

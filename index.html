@@ -124,69 +124,106 @@
         </div>
       </details>
 
-      <section class="date-panel" aria-label="Selector semanal">
-        <div class="week-header">
-          <button class="icon-button" id="prevWeek" aria-label="Semana anterior" title="Semana anterior">
-            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 18-6-6 6-6" /></svg>
-          </button>
-          <div>
-            <p class="section-label">Semana</p>
-            <h2 id="weekTitle"></h2>
+      <nav class="view-tabs" aria-label="Secciones">
+        <button class="view-tab active" id="tasksTab" type="button">Tareas</button>
+        <button class="view-tab" id="statsTab" type="button">Estadisticas</button>
+      </nav>
+
+      <section id="tasksView">
+        <section class="date-panel" aria-label="Selector semanal">
+          <div class="week-header">
+            <button class="icon-button" id="prevWeek" aria-label="Semana anterior" title="Semana anterior">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 18-6-6 6-6" /></svg>
+            </button>
+            <div>
+              <p class="section-label">Semana</p>
+              <h2 id="weekTitle"></h2>
+            </div>
+            <button class="icon-button" id="nextWeek" aria-label="Semana siguiente" title="Semana siguiente">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 18 6-6-6-6" /></svg>
+            </button>
+            <button class="secondary-button" id="openCalendar" type="button">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 2v4M16 2v4M3 10h18M5 4h14a2 2 0 0 1 2 2v13a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2Z" /></svg>
+              Calendario
+            </button>
           </div>
-          <button class="icon-button" id="nextWeek" aria-label="Semana siguiente" title="Semana siguiente">
-            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 18 6-6-6-6" /></svg>
-          </button>
-          <button class="secondary-button" id="openCalendar" type="button">
-            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 2v4M16 2v4M3 10h18M5 4h14a2 2 0 0 1 2 2v13a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2Z" /></svg>
-            Calendario
-          </button>
-        </div>
-        <div id="weekStrip" class="week-strip"></div>
+          <div id="weekStrip" class="week-strip"></div>
+        </section>
+
+        <section class="layout">
+          <section class="task-panel" aria-label="Tareas">
+            <div class="task-day-label">
+              <span>Tareas para</span>
+              <strong id="taskDateText">Hoy</strong>
+            </div>
+
+            <form id="taskForm" class="task-form">
+              <div class="field">
+                <label for="taskTitle">Tarea</label>
+                <input id="taskTitle" type="text" autocomplete="off" placeholder="Ej: Leer 20 minutos" required />
+              </div>
+              <div class="field xp-field">
+                <label for="taskXp">XP</label>
+                <select id="taskXp">
+                  <option value="5">5 XP</option>
+                  <option value="10">10 XP</option>
+                  <option value="15">15 XP</option>
+                  <option value="20" selected>20 XP</option>
+                  <option value="25">25 XP</option>
+                  <option value="30">30 XP</option>
+                </select>
+              </div>
+              <div class="field repeat-field">
+                <label for="taskRepeat">Repetir</label>
+                <select id="taskRepeat">
+                  <option value="day">Solo este dia</option>
+                  <option value="week">Todos los dias de esta semana</option>
+                  <option value="30days">Todos los dias por 30 dias</option>
+                </select>
+              </div>
+              <button class="primary-button" type="submit">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14" /></svg>
+                Agregar
+              </button>
+            </form>
+
+            <ul id="taskList" class="task-list" aria-label="Lista de tareas"></ul>
+            <div id="emptyState" class="empty-state">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01" /></svg>
+              <p>No hay tareas para este dia.</p>
+            </div>
+          </section>
+        </section>
       </section>
 
-      <section class="layout">
-        <section class="task-panel" aria-label="Tareas">
-          <div class="task-day-label">
-            <span>Tareas para</span>
-            <strong id="taskDateText">Hoy</strong>
+      <section class="stats-panel" id="statsView" hidden aria-label="Estadisticas">
+        <div class="stats-header">
+          <div>
+            <p class="section-label">Estadisticas</p>
+            <h2 id="statsTitle">Esta semana</h2>
           </div>
+          <select id="statsPeriod" aria-label="Periodo de estadisticas">
+            <option value="week">Semanal</option>
+            <option value="month">Mensual</option>
+          </select>
+        </div>
 
-          <form id="taskForm" class="task-form">
-            <div class="field">
-              <label for="taskTitle">Tarea</label>
-              <input id="taskTitle" type="text" autocomplete="off" placeholder="Ej: Leer 20 minutos" required />
-            </div>
-            <div class="field xp-field">
-              <label for="taskXp">XP</label>
-              <select id="taskXp">
-                <option value="5">5 XP</option>
-                <option value="10">10 XP</option>
-                <option value="15">15 XP</option>
-                <option value="20" selected>20 XP</option>
-                <option value="25">25 XP</option>
-                <option value="30">30 XP</option>
-              </select>
-            </div>
-            <div class="field repeat-field">
-              <label for="taskRepeat">Repetir</label>
-              <select id="taskRepeat">
-                <option value="day">Solo este dia</option>
-                <option value="week">Todos los dias de esta semana</option>
-                <option value="30days">Todos los dias por 30 dias</option>
-              </select>
-            </div>
-            <button class="primary-button" type="submit">
-              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14" /></svg>
-              Agregar
-            </button>
-          </form>
-
-          <ul id="taskList" class="task-list" aria-label="Lista de tareas"></ul>
-          <div id="emptyState" class="empty-state">
-            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01" /></svg>
-            <p>No hay tareas para este dia.</p>
+        <div class="stats-summary">
+          <div>
+            <span id="statsDone">0</span>
+            <small>hechas</small>
           </div>
-        </section>
+          <div>
+            <span id="statsWonXp">0</span>
+            <small>XP ganada</small>
+          </div>
+          <div>
+            <span id="statsLostXp">0</span>
+            <small>XP perdida</small>
+          </div>
+        </div>
+
+        <ul id="statsList" class="stats-list"></ul>
       </section>
 
       <div id="calendarOverlay" class="calendar-overlay" hidden>
@@ -216,6 +253,21 @@
           <h2 id="levelUpTitle">Nivel 2</h2>
           <p id="levelUpReward">Ganaste una recompensa.</p>
           <button class="primary-button" id="closeLevelUpButton" type="button">Genial</button>
+        </section>
+      </div>
+
+      <div id="profileOverlay" class="level-up-overlay" hidden>
+        <section class="profile-card" role="dialog" aria-modal="true" aria-labelledby="profileTitle">
+          <p class="eyebrow">Ritmo Diario</p>
+          <h2 id="profileTitle">Como te llamas?</h2>
+          <p>Asi la app te saluda cada vez que entras.</p>
+          <form id="profileForm" class="profile-form">
+            <div class="field">
+              <label for="profileName">Nombre</label>
+              <input id="profileName" type="text" autocomplete="name" maxlength="28" placeholder="Ej: Ivan" required />
+            </div>
+            <button class="primary-button" type="submit">Empezar</button>
+          </form>
         </section>
       </div>
     </main>
