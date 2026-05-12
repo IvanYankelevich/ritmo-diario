@@ -182,6 +182,7 @@ h1 {
   display: inline-grid;
   grid-auto-flow: column;
   gap: 8px;
+  position: relative;
 }
 
 .mini-button {
@@ -200,6 +201,123 @@ h1 {
   width: 34px;
   padding: 0;
   font-size: 1.08rem;
+}
+
+.achievements-menu {
+  position: relative;
+}
+
+.achievements-menu summary {
+  display: inline-grid;
+  min-height: 34px;
+  place-items: center;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fffaf0;
+  color: var(--accent-strong);
+  cursor: pointer;
+  font-size: 0.82rem;
+  font-weight: 900;
+  list-style: none;
+  padding: 0 10px;
+}
+
+.achievements-menu summary::-webkit-details-marker {
+  display: none;
+}
+
+.achievements-card {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  z-index: 8;
+  width: min(340px, calc(100vw - 26px));
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--panel);
+  box-shadow: var(--shadow);
+  padding: 12px;
+}
+
+.achievements-card-header,
+.achievement-item {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: center;
+}
+
+.achievements-card-header {
+  margin-bottom: 10px;
+}
+
+.achievements-card-header small {
+  color: var(--muted);
+  font-weight: 850;
+}
+
+.achievement-list {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.achievement-item {
+  grid-template-columns: 34px minmax(0, 1fr) auto;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #faf5e9;
+  opacity: 0.62;
+  padding: 10px;
+}
+
+.achievement-item.unlocked {
+  opacity: 1;
+}
+
+.achievement-trophy {
+  display: grid;
+  width: 30px;
+  height: 30px;
+  place-items: center;
+  border-radius: 999px;
+  background: rgba(199, 144, 47, 0.12);
+  color: #b8783f;
+}
+
+.achievement-trophy svg {
+  width: 20px;
+  height: 20px;
+  stroke-width: 2.2;
+}
+
+.achievement-item.silver .achievement-trophy {
+  background: rgba(199, 203, 209, 0.2);
+  color: #8f98a3;
+}
+
+.achievement-item.platinum .achievement-trophy {
+  background: linear-gradient(135deg, rgba(214, 240, 255, 0.45), rgba(159, 181, 199, 0.24));
+  color: #6f91aa;
+}
+
+.achievement-item strong,
+.achievement-item small {
+  display: block;
+}
+
+.achievement-item small {
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-weight: 750;
+}
+
+.achievement-item b {
+  color: var(--gold);
+  font-size: 0.82rem;
+  white-space: nowrap;
 }
 
 .level-card,
@@ -1065,6 +1183,7 @@ select:focus {
 }
 
 body[data-theme="dark"] .mini-button,
+body[data-theme="dark"] .achievements-menu summary,
 body[data-theme="dark"] .icon-button,
 body[data-theme="dark"] .secondary-button,
 body[data-theme="dark"] .delete-button,
@@ -1081,6 +1200,7 @@ body[data-theme="dark"] .stats-item,
 body[data-theme="dark"] .stats-empty,
 body[data-theme="dark"] .xp-chart,
 body[data-theme="dark"] .view-tab,
+body[data-theme="dark"] .achievement-item,
 body[data-theme="dark"] .reward-menu,
 body[data-theme="dark"] .account-menu,
 body[data-theme="dark"] .notification-menu,
@@ -1186,6 +1306,15 @@ body[data-theme="dark"] .xp-chart-track {
   .theme-toggle {
     width: 32px;
     padding: 0;
+  }
+
+  .achievements-menu summary {
+    min-height: 32px;
+    padding: 0 9px;
+  }
+
+  .achievements-card {
+    right: -46px;
   }
 
   .compact-menu {

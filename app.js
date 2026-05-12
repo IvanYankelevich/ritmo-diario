@@ -1,6 +1,48 @@
 const STORAGE_KEY = "ritmo-diario-state";
 const XP_PER_LEVEL = 100;
 const MAX_TASK_XP = 30;
+const ACHIEVEMENTS = [
+  {
+    id: "first-task",
+    title: "Primer paso",
+    description: "Completa tu primera tarea.",
+    difficulty: "copper",
+    xp: 10,
+    isUnlocked: () => getCompletedTasks().length >= 1,
+  },
+  {
+    id: "five-active-days",
+    title: "Cinco dias en ritmo",
+    description: "Haz al menos 1 tarea durante 5 dias distintos.",
+    difficulty: "silver",
+    xp: 25,
+    isUnlocked: () => getCompletedDayCount() >= 5,
+  },
+  {
+    id: "perfect-day",
+    title: "Dia perfecto",
+    description: "Haz todas las tareas de un dia.",
+    difficulty: "silver",
+    xp: 25,
+    isUnlocked: () => hasPerfectDay(),
+  },
+  {
+    id: "thirty-active-days",
+    title: "Constancia total",
+    description: "Haz tareas durante 30 dias distintos.",
+    difficulty: "platinum",
+    xp: 50,
+    isUnlocked: () => getCompletedDayCount() >= 30,
+  },
+  {
+    id: "hundred-tasks",
+    title: "Modo imparable",
+    description: "Completa 100 tareas.",
+    difficulty: "platinum",
+    xp: 50,
+    isUnlocked: () => getCompletedTasks().length >= 100,
+  },
+];
 
 const state = loadState();
 let currentUser = null;
@@ -52,6 +94,8 @@ const notificationStatus = document.querySelector("#notificationStatus");
 const testNotificationButton = document.querySelector("#testNotificationButton");
 const themeToggleButton = document.querySelector("#themeToggleButton");
 const themeIcon = document.querySelector("#themeIcon");
+const achievementCount = document.querySelector("#achievementCount");
+const achievementList = document.querySelector("#achievementList");
 const levelUpOverlay = document.querySelector("#levelUpOverlay");
 const levelUpTitle = document.querySelector("#levelUpTitle");
 const levelUpReward = document.querySelector("#levelUpReward");
@@ -220,6 +264,7 @@ function loadState() {
       },
     ],
     rewards: [],
+    achievements: [],
     settings: getDefaultSettings(),
   };
 }
@@ -235,6 +280,7 @@ function normalizeState(saved) {
           .filter((reward) => Number(reward.level) >= 2)
           .map((reward) => ({ level: Number(reward.level), title: String(reward.title || "") }))
       : [],
+    achievements: Array.isArray(saved.achievements) ? saved.achievements.map(String) : [],
     settings: {
       ...getDefaultSettings(),
       ...(saved.settings || {}),
@@ -261,6 +307,8 @@ function render() {
   renderWeek();
   renderCalendar();
   renderTasks();
+  updateAchievements();
+  renderAchievements();
   renderProgress();
   renderRewards();
   renderNotifications();
@@ -458,6 +506,42 @@ function renderTasks() {
   dayXp.textContent = completed.reduce((total, task) => total + task.xp, 0);
 }
 
+function updateAchievements() {
+  let changed = false;
+
+  for (const achievement of ACHIEVEMENTS) {
+    if (state.achievements.includes(achievement.id)) continue;
+    if (!achievement.isUnlocked()) continue;
+    state.achievements.push(achievement.id);
+    changed = true;
+  }
+
+  if (changed) saveState();
+}
+
+function renderAchievements() {
+  achievementList.innerHTML = "";
+  achievementCount.textContent = `${state.achievements.length} / ${ACHIEVEMENTS.length}`;
+
+  for (const achievement of ACHIEVEMENTS) {
+    const unlocked = state.achievements.includes(achievement.id);
+    const item = document.createElement("li");
+    item.className = `achievement-item ${achievement.difficulty}${unlocked ? " unlocked" : ""}`;
+
+    item.innerHTML = `
+      <span class="achievement-trophy" aria-hidden="true">
+        <svg viewBox="0 0 24 24"><path d="M8 4h8v3a4 4 0 0 1-8 0V4Z"/><path d="M8 6H5a2 2 0 0 0 2 5h1M16 6h3a2 2 0 0 1-2 5h-1M12 11v5M9 20h6M10 16h4"/></svg>
+      </span>
+      <div>
+        <strong>${achievement.title}</strong>
+        <small>${achievement.description}</small>
+      </div>
+      <b>${achievement.xp} XP</b>
+    `;
+    achievementList.appendChild(item);
+  }
+}
+
 function renderStats() {
   const range = getStatsRange(statsPeriod.value);
   const todayKey = toDateKey(new Date());
@@ -525,9 +609,7 @@ function renderTaskInsightList(list, items, type) {
 }
 
 function renderProgress() {
-  const totalXp = state.tasks
-    .filter((task) => task.completed)
-    .reduce((total, task) => total + task.xp, 0);
+  const totalXp = getTotalXp();
   const level = Math.floor(totalXp / XP_PER_LEVEL) + 1;
   const levelXp = totalXp % XP_PER_LEVEL;
 
@@ -589,6 +671,44 @@ function getSelectedTasks() {
   return state.tasks
     .filter((task) => task.date === selectedDate)
     .sort((first, second) => first.createdAt - second.createdAt);
+}
+
+function getCompletedTasks() {
+  return state.tasks.filter((task) => task.completed);
+}
+
+function getTaskXp() {
+  return getCompletedTasks().reduce((total, task) => total + task.xp, 0);
+}
+
+function getAchievementXp() {
+  return ACHIEVEMENTS.filter((achievement) => state.achievements.includes(achievement.id)).reduce(
+    (total, achievement) => total + achievement.xp,
+    0,
+  );
+}
+
+function getTotalXp() {
+  return getTaskXp() + getAchievementXp();
+}
+
+function getCompletedDayCount() {
+  return new Set(getCompletedTasks().map((task) => task.date)).size;
+}
+
+function hasPerfectDay() {
+  const tasksByDate = new Map();
+
+  for (const task of state.tasks) {
+    if (!tasksByDate.has(task.date)) tasksByDate.set(task.date, []);
+    tasksByDate.get(task.date).push(task);
+  }
+
+  for (const tasks of tasksByDate.values()) {
+    if (tasks.length > 0 && tasks.every((task) => task.completed)) return true;
+  }
+
+  return false;
 }
 
 function getNextRewardText(level) {
@@ -817,6 +937,7 @@ async function loadCloudState() {
     const cloudState = normalizeState(data.data);
     state.tasks = cloudState.tasks;
     state.rewards = cloudState.rewards;
+    state.achievements = cloudState.achievements;
     state.settings = cloudState.settings;
     localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
   } else {
@@ -845,6 +966,7 @@ async function saveCloudState() {
     data: {
       tasks: state.tasks,
       rewards: state.rewards,
+      achievements: state.achievements,
       settings: state.settings,
     },
     updated_at: new Date().toISOString(),
