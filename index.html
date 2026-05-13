@@ -42,29 +42,84 @@
 
     <main id="appScreen" class="app-shell" hidden>
       <section class="topbar" aria-label="Resumen">
-        <div>
-          <p class="eyebrow">Ritmo Diario</p>
-          <div class="title-row">
+        <div class="app-title-row">
+          <button class="icon-button menu-button" id="menuToggleButton" type="button" aria-label="Abrir menu">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16" /></svg>
+          </button>
+          <div>
+            <p class="eyebrow">Ritmo Diario</p>
             <h1 id="selectedDateTitle">Hoy</h1>
-            <div class="top-actions">
-              <button class="mini-button theme-toggle" id="themeToggleButton" type="button" aria-label="Cambiar tema">
-                <span id="themeIcon">&#9790;</span>
-              </button>
-              <details class="achievements-menu" id="achievementsMenu">
-                <summary>Logros</summary>
-                <div class="achievements-card">
-                  <div class="achievements-card-header">
-                    <strong>Logros</strong>
-                    <small id="achievementCount">0 / 0</small>
-                  </div>
-                  <ul id="achievementList" class="achievement-list"></ul>
-                </div>
-              </details>
-              <button class="mini-button" id="signOutButton" type="button">Salir</button>
-            </div>
           </div>
         </div>
-        <div class="level-card" aria-label="Progreso de nivel">
+      </section>
+
+      <div class="app-toast" id="appToast" hidden>
+        <strong id="toastTitle">Ritmo Diario</strong>
+        <span id="toastBody">Recordatorio</span>
+      </div>
+
+      <div class="side-menu-overlay" id="sideMenuOverlay" hidden>
+        <aside class="side-menu" aria-label="Menu principal">
+          <div class="side-menu-header">
+            <strong>Ritmo Diario</strong>
+            <button class="icon-button" id="closeMenuButton" type="button" aria-label="Cerrar menu">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12" /></svg>
+            </button>
+          </div>
+          <nav class="side-menu-nav">
+            <p class="side-menu-label">Menu</p>
+            <button class="menu-item active" type="button" data-view="tasks">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 11l2 2 4-4M8 3h8l2 3v15H6V6l2-3Z" /></svg>
+              Tareas y premios
+            </button>
+            <button class="menu-item" type="button" data-view="stats">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 19V9M12 19V5M20 19v-7" /></svg>
+              Estadisticas
+            </button>
+            <button class="menu-item" type="button" data-view="profile">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 21a8 8 0 0 0-16 0M12 3a4 4 0 1 0 0 8 4 4 0 0 0 0-8Z" /></svg>
+              Perfil
+            </button>
+          </nav>
+
+          <details class="notification-menu side-section">
+            <summary>
+              <span>Recordatorios</span>
+              <small id="notificationStatus">Apagados</small>
+            </summary>
+            <div class="notification-settings">
+              <label class="toggle-row">
+                <input id="notificationsEnabled" type="checkbox" />
+                <span>Recordarme tareas con campanita</span>
+              </label>
+              <div class="field">
+                <label for="notificationInterval">Frecuencia</label>
+                <select id="notificationInterval">
+                  <option value="60">Cada 1 hora</option>
+                  <option value="120" selected>Cada 2 horas</option>
+                  <option value="180">Cada 3 horas</option>
+                  <option value="240">Cada 4 horas</option>
+                </select>
+              </div>
+              <button class="secondary-button" id="testNotificationButton" type="button">Probar recordatorio</button>
+            </div>
+          </details>
+
+          <div class="side-menu-footer">
+            <button class="menu-item theme-menu-item" id="themeToggleButton" type="button">
+              <span id="themeIcon">&#9790;</span>
+              Cambiar tema
+            </button>
+            <button class="menu-item signout-menu-item" id="signOutButton" type="button">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 17l5-5-5-5M15 12H3M21 4v16"/></svg>
+              Salir
+            </button>
+          </div>
+        </aside>
+      </div>
+
+      <section id="tasksView">
+        <section class="level-card" aria-label="Progreso de nivel">
           <div class="level-meta">
             <span id="levelLabel">Nivel 1</span>
             <span id="xpLabel">0 / 100 XP</span>
@@ -111,44 +166,8 @@
             </details>
             <ul id="rewardList" class="reward-list"></ul>
           </details>
+        </section>
 
-        </div>
-      </section>
-
-      <details class="notification-menu compact-menu">
-        <summary>
-          <span>Recordatorios</span>
-          <small id="notificationStatus">Apagados</small>
-        </summary>
-        <div class="notification-settings">
-          <label class="toggle-row">
-            <input id="notificationsEnabled" type="checkbox" />
-            <span>Recordarme tareas con campanita</span>
-          </label>
-          <div class="field">
-            <label for="notificationInterval">Frecuencia</label>
-            <select id="notificationInterval">
-              <option value="60">Cada 1 hora</option>
-              <option value="120" selected>Cada 2 horas</option>
-              <option value="180">Cada 3 horas</option>
-              <option value="240">Cada 4 horas</option>
-            </select>
-          </div>
-          <button class="secondary-button" id="testNotificationButton" type="button">Probar recordatorio</button>
-        </div>
-      </details>
-
-      <div class="app-toast" id="appToast" hidden>
-        <strong id="toastTitle">Ritmo Diario</strong>
-        <span id="toastBody">Recordatorio</span>
-      </div>
-
-      <nav class="view-tabs" aria-label="Secciones">
-        <button class="view-tab active" id="tasksTab" type="button">Tareas</button>
-        <button class="view-tab" id="statsTab" type="button">Estadisticas</button>
-      </nav>
-
-      <section id="tasksView">
         <section class="date-panel" aria-label="Selector semanal">
           <div class="week-header">
             <button class="icon-button" id="prevWeek" aria-label="Semana anterior" title="Semana anterior">
@@ -161,15 +180,11 @@
             <button class="icon-button" id="nextWeek" aria-label="Semana siguiente" title="Semana siguiente">
               <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 18 6-6-6-6" /></svg>
             </button>
-            <button class="secondary-button" id="openCalendar" type="button">
-              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 2v4M16 2v4M3 10h18M5 4h14a2 2 0 0 1 2 2v13a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2Z" /></svg>
-              Calendario
-            </button>
           </div>
           <div id="weekStrip" class="week-strip"></div>
         </section>
 
-        <section class="layout">
+        <section class="layout tasks-layout">
           <section class="task-panel" aria-label="Tareas">
             <div class="task-day-label">
               <span>Tareas para</span>
@@ -224,6 +239,24 @@
         </section>
       </section>
 
+      <section class="calendar-view" id="calendarView" hidden aria-label="Calendario">
+        <section class="calendar-page">
+          <div class="calendar-header">
+            <button class="icon-button" id="prevPageMonth" aria-label="Mes anterior" title="Mes anterior">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 18-6-6 6-6" /></svg>
+            </button>
+            <h2 id="pageMonthTitle"></h2>
+            <button class="icon-button" id="nextPageMonth" aria-label="Mes siguiente" title="Mes siguiente">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 18 6-6-6-6" /></svg>
+            </button>
+          </div>
+          <div class="weekdays" aria-hidden="true">
+            <span>L</span><span>M</span><span>M</span><span>J</span><span>V</span><span>S</span><span>D</span>
+          </div>
+          <div id="pageCalendarGrid" class="calendar-grid"></div>
+        </section>
+      </section>
+
       <section class="stats-panel" id="statsView" hidden aria-label="Estadisticas">
         <div class="stats-header">
           <div>
@@ -263,6 +296,28 @@
             <ul id="topMissedList" class="stats-list"></ul>
           </section>
         </div>
+      </section>
+
+      <section class="profile-view" id="profileView" hidden aria-label="Perfil">
+        <section class="profile-panel">
+          <div class="profile-heading">
+            <div>
+              <p class="section-label">Perfil</p>
+              <h2 id="profileNameTitle">Demo</h2>
+            </div>
+            <button class="mini-button" id="editNameButton" type="button">Cambiar nombre</button>
+          </div>
+
+          <details class="achievements-menu profile-achievements" id="achievementsMenu">
+            <summary>
+              <span>Logros</span>
+              <small id="achievementCount">0 / 0</small>
+            </summary>
+            <div class="achievements-card">
+              <ul id="achievementList" class="achievement-list"></ul>
+            </div>
+          </details>
+        </section>
       </section>
 
       <div id="calendarOverlay" class="calendar-overlay" hidden>

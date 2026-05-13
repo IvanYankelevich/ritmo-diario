@@ -119,6 +119,9 @@ body[data-theme="dark"] .auth-card,
 body[data-theme="dark"] .level-card,
 body[data-theme="dark"] .date-panel,
 body[data-theme="dark"] .calendar-panel,
+body[data-theme="dark"] .calendar-page,
+body[data-theme="dark"] .profile-panel,
+body[data-theme="dark"] .reward-panel,
 body[data-theme="dark"] .stats-panel,
 body[data-theme="dark"] .task-panel {
   background: rgba(32, 37, 31, 0.94);
@@ -137,11 +140,15 @@ body[data-theme="dark"] .task-panel {
 }
 
 .topbar {
-  display: grid;
-  grid-template-columns: minmax(0, 0.8fr) minmax(320px, 1.2fr);
-  gap: 24px;
-  align-items: stretch;
+  display: block;
   margin-bottom: 16px;
+}
+
+.app-title-row {
+  display: grid;
+  grid-template-columns: 44px minmax(0, 1fr);
+  gap: 12px;
+  align-items: start;
 }
 
 .eyebrow {
@@ -178,13 +185,6 @@ h1 {
   align-items: start;
 }
 
-.top-actions {
-  display: inline-grid;
-  grid-auto-flow: column;
-  gap: 8px;
-  position: relative;
-}
-
 .mini-button {
   min-height: 34px;
   border: 1px solid var(--line);
@@ -201,6 +201,109 @@ h1 {
   width: 34px;
   padding: 0;
   font-size: 1.08rem;
+}
+
+.menu-button {
+  position: sticky;
+  top: 12px;
+  width: 44px;
+  height: 44px;
+  background: rgba(255, 253, 248, 0.92);
+  box-shadow: 0 10px 28px rgba(52, 43, 31, 0.1);
+}
+
+.side-menu-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  background: rgba(34, 32, 29, 0.42);
+  backdrop-filter: blur(4px);
+}
+
+.side-menu-overlay[hidden] {
+  display: none;
+}
+
+.side-menu {
+  display: flex;
+  flex-direction: column;
+  width: min(320px, 88vw);
+  height: 100%;
+  overflow: auto;
+  border-right: 1px solid var(--line);
+  background: var(--panel);
+  box-shadow: var(--shadow);
+  padding: 16px;
+}
+
+.side-menu-header {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 38px;
+  gap: 10px;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.side-menu-header strong {
+  color: var(--accent-strong);
+  font-size: 0.9rem;
+  text-transform: uppercase;
+}
+
+.side-menu-nav {
+  display: grid;
+  gap: 6px;
+  border-bottom: 1px solid var(--line);
+  margin-bottom: 14px;
+  padding-bottom: 14px;
+}
+
+.side-menu-label {
+  margin: 4px 2px 2px;
+  color: var(--muted);
+  font-size: 0.72rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.menu-item {
+  display: grid;
+  grid-template-columns: 26px minmax(0, 1fr);
+  gap: 12px;
+  align-items: center;
+  min-height: 46px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--ink);
+  cursor: pointer;
+  font-weight: 850;
+  text-align: left;
+  padding: 0 10px;
+}
+
+.menu-item.active,
+.menu-item:hover {
+  background: #faf5e9;
+  color: var(--accent-strong);
+}
+
+.side-section {
+  margin-top: 0;
+}
+
+.side-menu-footer {
+  display: grid;
+  gap: 6px;
+  border-top: 1px solid var(--line);
+  margin-top: auto;
+  padding-top: 12px;
+}
+
+.theme-menu-item span {
+  display: grid;
+  width: 24px;
+  place-items: center;
 }
 
 .achievements-menu {
@@ -237,6 +340,30 @@ h1 {
   background: var(--panel);
   box-shadow: var(--shadow);
   padding: 12px;
+}
+
+.profile-achievements {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #faf5e9;
+}
+
+.profile-achievements summary {
+  display: flex;
+  justify-content: space-between;
+  width: 100%;
+  border: 0;
+  background: transparent;
+}
+
+.profile-achievements .achievements-card {
+  position: static;
+  width: auto;
+  border: 0;
+  border-top: 1px solid var(--line);
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
 }
 
 .achievements-card-header,
@@ -323,6 +450,9 @@ h1 {
 .level-card,
 .date-panel,
 .calendar-panel,
+.calendar-page,
+.profile-panel,
+.reward-panel,
 .stats-panel,
 .task-panel {
   background: rgba(255, 253, 248, 0.92);
@@ -335,6 +465,7 @@ h1 {
   display: grid;
   align-content: start;
   border-radius: 8px;
+  margin-bottom: 16px;
   padding: 18px;
 }
 
@@ -373,37 +504,20 @@ body[data-theme="dark"] .progress-track {
 
 .layout {
   display: grid;
-  grid-template-columns: minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1.25fr) minmax(300px, 0.75fr);
   gap: 24px;
   align-items: start;
 }
 
-.view-tabs {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 8px;
-  width: min(1180px, calc(100% - 32px));
-  margin: 0 auto 14px;
-}
-
-.view-tab {
-  min-height: 40px;
-  border: 1px solid var(--line);
-  border-radius: 8px;
-  background: #fffaf0;
-  color: var(--muted);
-  cursor: pointer;
-  font-weight: 900;
-}
-
-.view-tab.active {
-  background: var(--accent);
-  border-color: var(--accent);
-  color: white;
+.tasks-layout {
+  grid-template-columns: 1fr;
 }
 
 .date-panel,
 .calendar-panel,
+.calendar-page,
+.profile-panel,
+.reward-panel,
 .stats-panel,
 .task-panel {
   border-radius: 8px;
@@ -414,9 +528,41 @@ body[data-theme="dark"] .progress-track {
   margin-bottom: 14px;
 }
 
+.calendar-view[hidden],
+.profile-view[hidden] {
+  display: none;
+}
+
+.calendar-view,
+.profile-view {
+  width: min(1180px, calc(100% - 32px));
+  margin: 0 auto;
+}
+
+.calendar-page .day-button {
+  min-height: 48px;
+  aspect-ratio: auto;
+}
+
+.profile-panel {
+  display: grid;
+  gap: 12px;
+}
+
+.profile-heading {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: center;
+}
+
+.profile-heading h2 {
+  font-size: 1.55rem;
+}
+
 .week-header {
   display: grid;
-  grid-template-columns: 42px minmax(0, 1fr) 42px auto;
+  grid-template-columns: 42px minmax(0, 1fr) 42px;
   gap: 10px;
   align-items: center;
   margin-bottom: 14px;
@@ -1056,6 +1202,10 @@ select:focus {
   padding: 0;
 }
 
+.level-card .reward-menu {
+  margin-top: 14px;
+}
+
 .account-menu,
 .notification-menu {
   margin-top: 10px;
@@ -1251,10 +1401,10 @@ select:focus {
 .reward-list {
   display: grid;
   gap: 10px;
-  margin: 16px 0 0;
+  margin: 0;
   max-height: 260px;
   overflow: auto;
-  padding: 0;
+  padding: 12px;
   list-style: none;
 }
 
@@ -1344,6 +1494,8 @@ select:focus {
 
 body[data-theme="dark"] .mini-button,
 body[data-theme="dark"] .achievements-menu summary,
+body[data-theme="dark"] .menu-item.active,
+body[data-theme="dark"] .menu-item:hover,
 body[data-theme="dark"] .suggestions-menu summary,
 body[data-theme="dark"] .add-suggestion-button,
 body[data-theme="dark"] .icon-button,
@@ -1362,7 +1514,6 @@ body[data-theme="dark"] .stats-summary div,
 body[data-theme="dark"] .stats-item,
 body[data-theme="dark"] .stats-empty,
 body[data-theme="dark"] .xp-chart,
-body[data-theme="dark"] .view-tab,
 body[data-theme="dark"] .achievement-item,
 body[data-theme="dark"] .suggestion-item,
 body[data-theme="dark"] .reward-suggestions-menu,
@@ -1374,12 +1525,6 @@ body[data-theme="dark"] .reward-empty,
 body[data-theme="dark"] .task-item {
   background: #252b25;
   border-color: var(--line);
-}
-
-body[data-theme="dark"] .view-tab.active {
-  background: var(--accent);
-  border-color: var(--accent);
-  color: #10201d;
 }
 
 body[data-theme="dark"] .xp-chart-track {
@@ -1409,12 +1554,14 @@ body[data-theme="dark"] .reminder-button.active {
 @media (max-width: 860px) {
   .topbar,
   .task-form,
-  .reward-form {
+  .reward-form,
+  .layout {
     grid-template-columns: 1fr;
   }
 
   .app-shell {
-    width: min(100% - 24px, 620px);
+    width: calc(100% - 24px);
+    margin: 0 auto;
     padding: 18px 0;
   }
 
@@ -1443,7 +1590,8 @@ body[data-theme="dark"] .reminder-button.active {
   }
 
   .app-shell {
-    width: min(100% - 18px, 620px);
+    width: calc(100% - 18px);
+    margin: 0 auto;
     padding: 12px 0 18px;
   }
 
@@ -1462,6 +1610,16 @@ body[data-theme="dark"] .reminder-button.active {
   .topbar {
     gap: 12px;
     margin-bottom: 12px;
+  }
+
+  .app-title-row {
+    grid-template-columns: 40px minmax(0, 1fr);
+    gap: 10px;
+  }
+
+  .menu-button {
+    width: 40px;
+    height: 40px;
   }
 
   h1 {
@@ -1491,8 +1649,9 @@ body[data-theme="dark"] .reminder-button.active {
     width: min(100% - 18px, 620px);
   }
 
-  .view-tabs,
-  .stats-panel {
+  .stats-panel,
+  .calendar-view,
+  .profile-view {
     width: min(100% - 18px, 620px);
   }
 
@@ -1516,11 +1675,6 @@ body[data-theme="dark"] .reminder-button.active {
 
   .week-header {
     grid-template-columns: 38px minmax(0, 1fr) 38px;
-  }
-
-  .week-header .secondary-button {
-    grid-column: 1 / -1;
-    width: 100%;
   }
 
   .week-strip {

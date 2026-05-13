@@ -86,6 +86,8 @@ const monthTitle = document.querySelector("#monthTitle");
 const selectedDateTitle = document.querySelector("#selectedDateTitle");
 const weekStrip = document.querySelector("#weekStrip");
 const weekTitle = document.querySelector("#weekTitle");
+const pageCalendarGrid = document.querySelector("#pageCalendarGrid");
+const pageMonthTitle = document.querySelector("#pageMonthTitle");
 const taskForm = document.querySelector("#taskForm");
 const taskTitle = document.querySelector("#taskTitle");
 const taskXp = document.querySelector("#taskXp");
@@ -119,6 +121,9 @@ const toastTitle = document.querySelector("#toastTitle");
 const toastBody = document.querySelector("#toastBody");
 const themeToggleButton = document.querySelector("#themeToggleButton");
 const themeIcon = document.querySelector("#themeIcon");
+const menuToggleButton = document.querySelector("#menuToggleButton");
+const closeMenuButton = document.querySelector("#closeMenuButton");
+const sideMenuOverlay = document.querySelector("#sideMenuOverlay");
 const achievementCount = document.querySelector("#achievementCount");
 const achievementList = document.querySelector("#achievementList");
 const levelUpOverlay = document.querySelector("#levelUpOverlay");
@@ -132,10 +137,13 @@ const nextRewardText = document.querySelector("#nextRewardText");
 const completedCount = document.querySelector("#completedCount");
 const pendingCount = document.querySelector("#pendingCount");
 const dayXp = document.querySelector("#dayXp");
-const tasksTab = document.querySelector("#tasksTab");
-const statsTab = document.querySelector("#statsTab");
+const menuItems = document.querySelectorAll("[data-view]");
 const tasksView = document.querySelector("#tasksView");
+const calendarView = document.querySelector("#calendarView");
 const statsView = document.querySelector("#statsView");
+const profileView = document.querySelector("#profileView");
+const profileNameTitle = document.querySelector("#profileNameTitle");
+const editNameButton = document.querySelector("#editNameButton");
 const statsPeriod = document.querySelector("#statsPeriod");
 const statsTitle = document.querySelector("#statsTitle");
 const statsDone = document.querySelector("#statsDone");
@@ -158,6 +166,16 @@ document.querySelector("#nextMonth").addEventListener("click", () => {
   render();
 });
 
+document.querySelector("#prevPageMonth").addEventListener("click", () => {
+  visibleMonth = new Date(visibleMonth.getFullYear(), visibleMonth.getMonth() - 1, 1);
+  render();
+});
+
+document.querySelector("#nextPageMonth").addEventListener("click", () => {
+  visibleMonth = new Date(visibleMonth.getFullYear(), visibleMonth.getMonth() + 1, 1);
+  render();
+});
+
 document.querySelector("#prevWeek").addEventListener("click", () => {
   const date = parseDateKey(selectedDate);
   date.setDate(date.getDate() - 7);
@@ -170,9 +188,12 @@ document.querySelector("#nextWeek").addEventListener("click", () => {
   selectDate(toDateKey(date));
 });
 
-document.querySelector("#openCalendar").addEventListener("click", () => {
-  calendarOverlay.hidden = false;
-});
+const openCalendarButton = document.querySelector("#openCalendar");
+if (openCalendarButton) {
+  openCalendarButton.addEventListener("click", () => {
+    calendarOverlay.hidden = false;
+  });
+}
 
 document.querySelector("#closeCalendar").addEventListener("click", () => {
   calendarOverlay.hidden = true;
@@ -183,7 +204,10 @@ calendarOverlay.addEventListener("click", (event) => {
 });
 
 document.addEventListener("keydown", (event) => {
-  if (event.key === "Escape") calendarOverlay.hidden = true;
+  if (event.key === "Escape") {
+    calendarOverlay.hidden = true;
+    closeSideMenu();
+  }
 });
 
 taskForm.addEventListener("submit", (event) => {
@@ -227,9 +251,23 @@ notificationsEnabled.addEventListener("change", () => updateNotificationSettings
 notificationInterval.addEventListener("change", () => updateNotificationSettings());
 testNotificationButton.addEventListener("click", () => testNotification());
 themeToggleButton.addEventListener("click", () => toggleTheme());
-tasksTab.addEventListener("click", () => setActiveView("tasks"));
-statsTab.addEventListener("click", () => setActiveView("stats"));
+menuItems.forEach((item) => {
+  item.addEventListener("click", () => {
+    setActiveView(item.dataset.view);
+    if (item.classList.contains("menu-item")) closeSideMenu();
+  });
+});
+menuToggleButton.addEventListener("click", () => openSideMenu());
+closeMenuButton.addEventListener("click", () => closeSideMenu());
+sideMenuOverlay.addEventListener("click", (event) => {
+  if (event.target === sideMenuOverlay) closeSideMenu();
+});
 statsPeriod.addEventListener("change", () => renderStats());
+editNameButton.addEventListener("click", () => {
+  profileOverlay.hidden = false;
+  profileName.value = state.settings.displayName || "";
+  profileName.focus();
+});
 profileForm.addEventListener("submit", (event) => {
   event.preventDefault();
   const name = profileName.value.trim();
@@ -326,6 +364,7 @@ function render() {
   renderHeader();
   renderWeek();
   renderCalendar();
+  renderPageCalendar();
   renderTasks();
   renderSuggestions();
   updateAchievements();
@@ -391,25 +430,38 @@ function renderNotifications() {
 function renderHeader() {
   const name = state.settings.displayName || "vos";
   selectedDateTitle.textContent = `Hola ${name}, que hacemos hoy?`;
+  profileNameTitle.textContent = name;
   taskDateText.textContent = formatSelectedDate(selectedDate);
   monthTitle.textContent = visibleMonth.toLocaleDateString("es-AR", {
     month: "long",
     year: "numeric",
   });
+  pageMonthTitle.textContent = monthTitle.textContent;
 }
 
 function renderView() {
-  const showingStats = activeView === "stats";
-  tasksView.hidden = showingStats;
-  statsView.hidden = !showingStats;
-  tasksTab.classList.toggle("active", !showingStats);
-  statsTab.classList.toggle("active", showingStats);
+  tasksView.hidden = activeView !== "tasks";
+  calendarView.hidden = activeView !== "calendar";
+  statsView.hidden = activeView !== "stats";
+  profileView.hidden = activeView !== "profile";
+  menuItems.forEach((item) => {
+    item.classList.toggle("active", item.dataset.view === activeView);
+  });
+}
+
+function openSideMenu() {
+  sideMenuOverlay.hidden = false;
+}
+
+function closeSideMenu() {
+  sideMenuOverlay.hidden = true;
 }
 
 function setActiveView(view) {
   activeView = view;
   renderView();
   if (view === "stats") renderStats();
+  if (view === "calendar") renderPageCalendar();
 }
 
 function renderProfilePrompt() {
@@ -478,6 +530,38 @@ function renderCalendar() {
     });
 
     calendarGrid.appendChild(button);
+  }
+}
+
+function renderPageCalendar() {
+  pageCalendarGrid.innerHTML = "";
+  const year = visibleMonth.getFullYear();
+  const month = visibleMonth.getMonth();
+  const firstDay = new Date(year, month, 1);
+  const startOffset = (firstDay.getDay() + 6) % 7;
+  const gridStart = new Date(year, month, 1 - startOffset);
+
+  for (let index = 0; index < 42; index += 1) {
+    const date = new Date(gridStart);
+    date.setDate(gridStart.getDate() + index);
+    const key = toDateKey(date);
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "day-button";
+    button.textContent = date.getDate();
+    button.setAttribute("aria-label", formatSelectedDate(key));
+
+    if (date.getMonth() === month) button.classList.add("current-month");
+    if (key === toDateKey(new Date())) button.classList.add("today");
+    if (key === selectedDate) button.classList.add("selected");
+    if (state.tasks.some((task) => task.date === key)) button.classList.add("has-tasks");
+
+    button.addEventListener("click", () => {
+      selectDate(key);
+      setActiveView("tasks");
+    });
+
+    pageCalendarGrid.appendChild(button);
   }
 }
 
