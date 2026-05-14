@@ -168,11 +168,12 @@ let reminderTimer = null;
 let toastTimer = null;
 let isLoadingCloudState = false;
 let authMode = "signin";
+let passwordRecoveryMode = false;
 let lastRenderedLevel = null;
 let selectedDate = toDateKey(new Date());
 let visibleMonth = new Date();
 let selectedExpenseMonth = getMonthKey(new Date());
-let activeView = "tasks";
+let activeView = "home";
 let editingTaskId = null;
 let editingExpenseId = null;
 
@@ -208,8 +209,10 @@ const signUpButton = document.querySelector("#signUpButton");
 const signOutButton = document.querySelector("#signOutButton");
 const showSignUpButton = document.querySelector("#showSignUpButton");
 const showSignInButton = document.querySelector("#showSignInButton");
+const recoverPasswordButton = document.querySelector("#recoverPasswordButton");
 const signUpPrompt = document.querySelector("#signUpPrompt");
 const signInPrompt = document.querySelector("#signInPrompt");
+const recoverPrompt = document.querySelector("#recoverPrompt");
 const togglePasswordButton = document.querySelector("#togglePasswordButton");
 const authStatus = document.querySelector("#authStatus");
 const notificationsEnabled = document.querySelector("#notificationsEnabled");
@@ -219,6 +222,9 @@ const testNotificationButton = document.querySelector("#testNotificationButton")
 const appToast = document.querySelector("#appToast");
 const toastTitle = document.querySelector("#toastTitle");
 const toastBody = document.querySelector("#toastBody");
+const syncBanner = document.querySelector("#syncBanner");
+const syncBannerTitle = document.querySelector("#syncBannerTitle");
+const syncBannerText = document.querySelector("#syncBannerText");
 const themeToggleButton = document.querySelector("#themeToggleButton");
 const themeIcon = document.querySelector("#themeIcon");
 const menuToggleButton = document.querySelector("#menuToggleButton");
@@ -238,6 +244,14 @@ const completedCount = document.querySelector("#completedCount");
 const pendingCount = document.querySelector("#pendingCount");
 const dayXp = document.querySelector("#dayXp");
 const menuItems = document.querySelectorAll("[data-view]");
+const homeView = document.querySelector("#homeView");
+const homeGreeting = document.querySelector("#homeGreeting");
+const homePending = document.querySelector("#homePending");
+const homePendingText = document.querySelector("#homePendingText");
+const homePossibleXp = document.querySelector("#homePossibleXp");
+const homeSaved = document.querySelector("#homeSaved");
+const homeSavingsText = document.querySelector("#homeSavingsText");
+const homeActionList = document.querySelector("#homeActionList");
 const tasksView = document.querySelector("#tasksView");
 const calendarView = document.querySelector("#calendarView");
 const statsView = document.querySelector("#statsView");
@@ -281,9 +295,14 @@ const expenseList = document.querySelector("#expenseList");
 const expenseEmptyState = document.querySelector("#expenseEmptyState");
 const categoryChart = document.querySelector("#categoryChart");
 const topExpenseCategory = document.querySelector("#topExpenseCategory");
+const expenseHistorySummary = document.querySelector("#expenseHistorySummary");
+const expenseHistoryList = document.querySelector("#expenseHistoryList");
 const profileOverlay = document.querySelector("#profileOverlay");
 const profileForm = document.querySelector("#profileForm");
 const profileName = document.querySelector("#profileName");
+const passwordRecoveryOverlay = document.querySelector("#passwordRecoveryOverlay");
+const passwordRecoveryForm = document.querySelector("#passwordRecoveryForm");
+const newPassword = document.querySelector("#newPassword");
 
 document.querySelector("#prevMonth").addEventListener("click", () => {
   visibleMonth = new Date(visibleMonth.getFullYear(), visibleMonth.getMonth() - 1, 1);
@@ -385,6 +404,7 @@ signUpButton.addEventListener("click", () => signUp());
 signOutButton.addEventListener("click", () => signOut());
 showSignUpButton.addEventListener("click", () => setAuthMode("signup"));
 showSignInButton.addEventListener("click", () => setAuthMode("signin"));
+recoverPasswordButton.addEventListener("click", () => recoverPassword());
 togglePasswordButton.addEventListener("click", () => togglePasswordVisibility());
 notificationsEnabled.addEventListener("change", () => updateNotificationSettings());
 notificationInterval.addEventListener("change", () => updateNotificationSettings());
@@ -401,6 +421,8 @@ closeMenuButton.addEventListener("click", () => closeSideMenu());
 sideMenuOverlay.addEventListener("click", (event) => {
   if (event.target === sideMenuOverlay) closeSideMenu();
 });
+window.addEventListener("online", () => renderSyncBanner());
+window.addEventListener("offline", () => renderSyncBanner());
 statsPeriod.addEventListener("change", () => renderStats());
 expenseMonth.addEventListener("change", () => {
   selectedExpenseMonth = expenseMonth.value || getMonthKey(new Date());
@@ -480,6 +502,7 @@ profileForm.addEventListener("submit", (event) => {
   saveState();
   render();
 });
+passwordRecoveryForm.addEventListener("submit", (event) => updateRecoveredPassword(event));
 closeLevelUpButton.addEventListener("click", () => {
   levelUpOverlay.hidden = true;
 });
@@ -593,8 +616,10 @@ function saveState() {
 function render() {
   renderAuth();
   renderTheme();
+  renderSyncBanner();
   if (!currentUser) return;
   renderHeader();
+  renderHome();
   renderWeek();
   renderCalendar();
   renderPageCalendar();
@@ -609,6 +634,7 @@ function render() {
   renderExpenses();
   renderView();
   renderProfilePrompt();
+  renderPasswordRecovery();
   renderStats();
 }
 
@@ -623,6 +649,7 @@ function renderAuth() {
   signUpButton.hidden = authMode !== "signup";
   signUpPrompt.hidden = authMode !== "signin";
   signInPrompt.hidden = authMode !== "signup";
+  recoverPrompt.hidden = authMode !== "signin";
   authTitle.textContent = authMode === "signin" ? "Entrar" : "Registrarme";
   authPassword.autocomplete = authMode === "signin" ? "current-password" : "new-password";
 
@@ -665,6 +692,7 @@ function renderNotifications() {
 function renderHeader() {
   const name = state.settings.displayName || "vos";
   const titles = {
+    home: `Hola ${name}`,
     tasks: `Hola ${name}, que hacemos hoy?`,
     stats: "Estadisticas",
     expenses: "Gastos del mes",
@@ -682,6 +710,7 @@ function renderHeader() {
 }
 
 function renderView() {
+  homeView.hidden = activeView !== "home";
   tasksView.hidden = activeView !== "tasks";
   calendarView.hidden = activeView !== "calendar";
   statsView.hidden = activeView !== "stats";
@@ -703,13 +732,58 @@ function closeSideMenu() {
 function setActiveView(view) {
   activeView = view;
   renderHeader();
+  if (view === "home") renderHome();
   renderView();
   if (view === "stats") renderStats();
   if (view === "expenses") renderExpenses();
   if (view === "calendar") renderPageCalendar();
 }
 
+function renderHome() {
+  const todayKey = toDateKey(new Date());
+  const todaysTasks = state.tasks.filter((task) => task.date === todayKey);
+  const pending = todaysTasks.filter((task) => !task.completed);
+  const possibleXp = pending.reduce((total, task) => total + task.xp, 0);
+  const month = getMonthKey(new Date());
+  const monthSummary = getMonthFinanceSummary(month);
+  const name = state.settings.displayName || "vos";
+
+  homeGreeting.textContent = `Hola ${name}, que vamos a hacer hoy?`;
+  homePending.textContent = String(pending.length);
+  homePendingText.textContent =
+    pending.length === 0 ? "Tenes el dia al dia." : `${pending.length} tarea${pending.length === 1 ? "" : "s"} por cerrar.`;
+  homePossibleXp.textContent = String(possibleXp);
+  homeSaved.textContent = formatMoney(monthSummary.saved);
+  homeSaved.classList.toggle("negative", monthSummary.saved < 0);
+  homeSavingsText.textContent = monthSummary.goal
+    ? `Meta: ${formatMoney(monthSummary.goal)}`
+    : "Carga una meta para medir tu avance.";
+
+  const nextReward = state.rewards
+    .filter((reward) => reward.level > getCurrentLevel())
+    .sort((first, second) => first.level - second.level)[0];
+  const actions = [
+    pending[0] ? `Primera tarea pendiente: ${pending[0].title}.` : "No quedan tareas pendientes para hoy.",
+    nextReward ? `Proximo premio: nivel ${nextReward.level}, ${nextReward.title}.` : "Todavia no hay premios pendientes cargados.",
+    monthSummary.goal
+      ? `Te faltan ${formatMoney(Math.max(monthSummary.goal - monthSummary.saved, 0))} para tu meta.`
+      : "Define una meta de ahorro para este mes.",
+  ];
+
+  homeActionList.innerHTML = "";
+  for (const action of actions) {
+    const item = document.createElement("li");
+    item.textContent = action;
+    homeActionList.appendChild(item);
+  }
+}
+
 function renderProfilePrompt() {
+  if (passwordRecoveryMode) {
+    profileOverlay.hidden = true;
+    return;
+  }
+
   if (DEMO_MODE) {
     profileOverlay.hidden = true;
     return;
@@ -718,6 +792,12 @@ function renderProfilePrompt() {
   const hasName = Boolean(state.settings.displayName);
   profileOverlay.hidden = hasName;
   if (!hasName) profileName.focus();
+}
+
+function renderPasswordRecovery() {
+  if (!passwordRecoveryOverlay) return;
+  passwordRecoveryOverlay.hidden = !passwordRecoveryMode;
+  if (passwordRecoveryMode) newPassword.focus();
 }
 
 function renderWeek() {
@@ -1059,6 +1139,7 @@ function renderExpenses() {
   budgetLeftTotal.classList.toggle("negative", budget > 0 && budgetLeft < 0);
   renderBudgetStatus(budget, spent);
   renderCategoryChart(monthlyExpenses, spent);
+  renderExpenseHistory();
 
   expenseList.innerHTML = "";
   expenseEmptyState.classList.toggle("hidden", monthlyExpenses.length > 0);
@@ -1099,6 +1180,37 @@ function renderExpenses() {
 
     item.append(content, amount, editButton, deleteButton);
     expenseList.appendChild(item);
+  }
+}
+
+function renderExpenseHistory() {
+  const months = getExpenseHistoryMonths().filter((month) => month !== selectedExpenseMonth).slice(0, 6);
+  expenseHistoryList.innerHTML = "";
+  expenseHistorySummary.textContent = months.length ? `${months.length} meses` : "Sin historial";
+
+  if (months.length === 0) {
+    const empty = document.createElement("li");
+    empty.className = "stats-empty";
+    empty.textContent = "Cuando cargues otros meses, vas a verlos aca.";
+    expenseHistoryList.appendChild(empty);
+    return;
+  }
+
+  for (const month of months) {
+    const summary = getMonthFinanceSummary(month);
+    const item = document.createElement("li");
+    item.className = "expense-history-item";
+    item.innerHTML = `
+      <div>
+        <strong>${formatMonthLabel(month)}</strong>
+        <small>${summary.count} gasto${summary.count === 1 ? "" : "s"}</small>
+      </div>
+      <div>
+        <span>${formatMoney(summary.spent)}</span>
+        <small class="${summary.saved < 0 ? "negative" : ""}">${formatMoney(summary.saved)} ahorrado</small>
+      </div>
+    `;
+    expenseHistoryList.appendChild(item);
   }
 }
 
@@ -1491,6 +1603,34 @@ function getMonthlyExpenses() {
     .sort((first, second) => second.createdAt - first.createdAt);
 }
 
+function getExpenseHistoryMonths() {
+  const months = new Set([
+    ...state.expenses.map((expense) => expense.month),
+    ...Object.keys(state.monthlyIncome),
+    ...Object.keys(state.monthlyBudgets),
+    ...Object.keys(state.monthlySavingsGoals),
+  ]);
+
+  return [...months].filter((month) => /^\d{4}-\d{2}$/.test(month)).sort((first, second) => second.localeCompare(first));
+}
+
+function getMonthFinanceSummary(month) {
+  const expenses = state.expenses.filter((expense) => expense.month === month);
+  const spent = expenses.reduce((total, expense) => total + expense.amount, 0);
+  const income = state.monthlyIncome[month] || 0;
+  const budget = state.monthlyBudgets[month] || 0;
+  const goal = state.monthlySavingsGoals[month] || 0;
+
+  return {
+    count: expenses.length,
+    income,
+    spent,
+    budget,
+    goal,
+    saved: income - spent,
+  };
+}
+
 function getExpenseCategory(id) {
   return EXPENSE_CATEGORIES.find((category) => category.id === id) || EXPENSE_CATEGORIES.at(-1);
 }
@@ -1667,7 +1807,8 @@ function initCloudSync() {
     render();
   });
 
-  cloudClient.auth.onAuthStateChange((_event, session) => {
+  cloudClient.auth.onAuthStateChange((event, session) => {
+    if (event === "PASSWORD_RECOVERY") passwordRecoveryMode = true;
     currentUser = session?.user || null;
     if (currentUser) loadCloudState();
     render();
@@ -1710,6 +1851,46 @@ async function signUp() {
     setAuthMode("signin", false);
     setSyncStatus("Cuenta creada. Ahora podes entrar.");
   }
+}
+
+async function recoverPassword() {
+  if (!cloudReady) return;
+  const email = authEmail.value.trim();
+
+  if (!email) {
+    setSyncStatus("Escribe tu email para recuperar la contrasena.");
+    authEmail.focus();
+    return;
+  }
+
+  setSyncStatus("Enviando recuperacion...");
+  const { error } = await cloudClient.auth.resetPasswordForEmail(email, {
+    redirectTo: window.location.origin,
+  });
+
+  setSyncStatus(error ? getAuthErrorMessage(error) : "Te enviamos un email para recuperar la contrasena.");
+}
+
+async function updateRecoveredPassword(event) {
+  event.preventDefault();
+  if (!cloudReady || !passwordRecoveryMode) return;
+
+  const password = newPassword.value;
+  if (password.length < 6) {
+    showToast("Contrasena corta", "Usa al menos 6 caracteres.");
+    return;
+  }
+
+  const { error } = await cloudClient.auth.updateUser({ password });
+  if (error) {
+    showToast("No se pudo guardar", getAuthErrorMessage(error));
+    return;
+  }
+
+  passwordRecoveryMode = false;
+  newPassword.value = "";
+  showToast("Contrasena actualizada", "Ya podes usar tu nueva contrasena.");
+  render();
 }
 
 async function signOut() {
@@ -1794,6 +1975,23 @@ async function saveCloudState() {
 
 function setSyncStatus(message) {
   authStatus.textContent = message;
+  renderSyncBanner(message);
+}
+
+function renderSyncBanner(message = "") {
+  if (!syncBanner) return;
+
+  const offline = !navigator.onLine;
+  const cloudError = /error de nube/i.test(message);
+  syncBanner.hidden = !currentUser || (!offline && !cloudError);
+
+  if (offline) {
+    syncBannerTitle.textContent = "Sin conexion";
+    syncBannerText.textContent = "Tus cambios quedan guardados aca y se sincronizan cuando vuelva internet.";
+  } else if (cloudError) {
+    syncBannerTitle.textContent = "No se pudo sincronizar";
+    syncBannerText.textContent = "La app sigue funcionando en este dispositivo. Revisa internet o Supabase.";
+  }
 }
 
 function setAuthMode(mode, resetStatus = true) {

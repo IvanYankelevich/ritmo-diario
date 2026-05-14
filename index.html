@@ -32,6 +32,10 @@
             No tenes cuenta?
             <button id="showSignUpButton" type="button">Registrate aca</button>
           </p>
+          <p class="auth-switch" id="recoverPrompt">
+            Olvidaste tu contrasena?
+            <button id="recoverPasswordButton" type="button">Recuperarla</button>
+          </p>
           <p class="auth-switch" id="signInPrompt" hidden>
             Ya tenes cuenta?
             <button id="showSignInButton" type="button">Entrar</button>
@@ -58,6 +62,11 @@
         <span id="toastBody">Recordatorio</span>
       </div>
 
+      <div class="sync-banner" id="syncBanner" hidden>
+        <strong id="syncBannerTitle">Sin conexion</strong>
+        <span id="syncBannerText">Tus cambios quedan guardados en este dispositivo.</span>
+      </div>
+
       <div class="side-menu-overlay" id="sideMenuOverlay" hidden>
         <aside class="side-menu" aria-label="Menu principal">
           <div class="side-menu-header">
@@ -68,7 +77,11 @@
           </div>
           <nav class="side-menu-nav">
             <p class="side-menu-label">Menu</p>
-            <button class="menu-item active" type="button" data-view="tasks">
+            <button class="menu-item active" type="button" data-view="home">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 11 12 3l9 8v10H5V11Z" /></svg>
+              Inicio
+            </button>
+            <button class="menu-item" type="button" data-view="tasks">
               <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 11l2 2 4-4M8 3h8l2 3v15H6V6l2-3Z" /></svg>
               Tareas y premios
             </button>
@@ -122,7 +135,46 @@
         </aside>
       </div>
 
-      <section id="tasksView">
+      <section class="home-view" id="homeView">
+        <section class="home-hero">
+          <div>
+            <p class="section-label">Resumen de hoy</p>
+            <h2 id="homeGreeting">Que hacemos hoy?</h2>
+          </div>
+          <button class="mini-button" type="button" data-view="tasks">Ver tareas</button>
+        </section>
+
+        <section class="home-grid" aria-label="Resumen rapido">
+          <article class="home-card">
+            <small>Pendientes</small>
+            <strong id="homePending">0</strong>
+            <span id="homePendingText">Sin tareas pendientes.</span>
+          </article>
+          <article class="home-card">
+            <small>XP disponible</small>
+            <strong id="homePossibleXp">0</strong>
+            <span>Si completas todo lo de hoy.</span>
+          </article>
+          <article class="home-card">
+            <small>Ahorro del mes</small>
+            <strong id="homeSaved">$0</strong>
+            <span id="homeSavingsText">Carga ingresos y gastos para medirlo.</span>
+          </article>
+        </section>
+
+        <section class="home-panel">
+          <div class="section-heading">
+            <div>
+              <p class="section-label">Proximas acciones</p>
+              <h3>Enfoque rapido</h3>
+            </div>
+            <button class="mini-button" type="button" data-view="expenses">Ver gastos</button>
+          </div>
+          <ul id="homeActionList" class="home-action-list"></ul>
+        </section>
+      </section>
+
+      <section id="tasksView" hidden>
         <section class="level-card" aria-label="Progreso de nivel">
           <div class="level-meta">
             <span id="levelLabel">Nivel 1</span>
@@ -403,6 +455,14 @@
           <div id="categoryChart" class="category-chart"></div>
         </details>
 
+        <details class="expense-details-card">
+          <summary>
+            <span>Historial mensual</span>
+            <small id="expenseHistorySummary">Sin historial</small>
+          </summary>
+          <ul id="expenseHistoryList" class="expense-history-list"></ul>
+        </details>
+
         <ul id="expenseList" class="expense-list" aria-label="Lista de gastos"></ul>
         <div id="expenseEmptyState" class="empty-state">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M6 7v13h12V7M9 11h6M9 15h4M8 7V4h8v3" /></svg>
@@ -473,6 +533,21 @@
               <input id="profileName" type="text" autocomplete="name" maxlength="28" placeholder="Ej: Ivan" required />
             </div>
             <button class="primary-button" type="submit">Empezar</button>
+          </form>
+        </section>
+      </div>
+
+      <div id="passwordRecoveryOverlay" class="level-up-overlay" hidden>
+        <section class="profile-card" role="dialog" aria-modal="true" aria-labelledby="passwordRecoveryTitle">
+          <p class="eyebrow">Ritmo Diario</p>
+          <h2 id="passwordRecoveryTitle">Nueva contrasena</h2>
+          <p>Escribe una contrasena nueva para volver a entrar.</p>
+          <form id="passwordRecoveryForm" class="profile-form">
+            <div class="field">
+              <label for="newPassword">Contrasena</label>
+              <input id="newPassword" type="password" autocomplete="new-password" minlength="6" placeholder="Minimo 6 caracteres" required />
+            </div>
+            <button class="primary-button" type="submit">Guardar contrasena</button>
           </form>
         </section>
       </div>
