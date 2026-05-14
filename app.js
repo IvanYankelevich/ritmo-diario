@@ -20,6 +20,14 @@ const REWARD_SUGGESTIONS = [
   "Salida a caminar",
   "Descanso sin culpa",
 ];
+const EXPENSE_CATEGORIES = [
+  { id: "food", label: "Comida" },
+  { id: "transport", label: "Transporte" },
+  { id: "services", label: "Servicios" },
+  { id: "home", label: "Casa" },
+  { id: "fun", label: "Ocio" },
+  { id: "other", label: "Otros" },
+];
 const ACHIEVEMENTS = [
   {
     id: "first-task",
@@ -46,6 +54,38 @@ const ACHIEVEMENTS = [
     isUnlocked: () => hasPerfectDay(),
   },
   {
+    id: "three-perfect-days",
+    title: "Tres dias impecables",
+    description: "Completa todas las tareas en 3 dias distintos.",
+    difficulty: "silver",
+    xp: 25,
+    isUnlocked: () => getPerfectDayCount() >= 3,
+  },
+  {
+    id: "ten-perfect-days",
+    title: "Agenda dorada",
+    description: "Completa todas las tareas en 10 dias distintos.",
+    difficulty: "platinum",
+    xp: 50,
+    isUnlocked: () => getPerfectDayCount() >= 10,
+  },
+  {
+    id: "ten-tasks",
+    title: "Motor encendido",
+    description: "Completa 10 tareas.",
+    difficulty: "copper",
+    xp: 10,
+    isUnlocked: () => getCompletedTasks().length >= 10,
+  },
+  {
+    id: "fifty-tasks",
+    title: "Ritmo firme",
+    description: "Completa 50 tareas.",
+    difficulty: "silver",
+    xp: 25,
+    isUnlocked: () => getCompletedTasks().length >= 50,
+  },
+  {
     id: "thirty-active-days",
     title: "Constancia total",
     description: "Haz tareas durante 30 dias distintos.",
@@ -61,6 +101,62 @@ const ACHIEVEMENTS = [
     xp: 50,
     isUnlocked: () => getCompletedTasks().length >= 100,
   },
+  {
+    id: "first-reward",
+    title: "Premio preparado",
+    description: "Crea tu primer premio.",
+    difficulty: "copper",
+    xp: 10,
+    isUnlocked: () => state.rewards.length >= 1,
+  },
+  {
+    id: "five-rewards",
+    title: "Escalera de premios",
+    description: "Crea 5 premios distintos.",
+    difficulty: "silver",
+    xp: 25,
+    isUnlocked: () => state.rewards.length >= 5,
+  },
+  {
+    id: "first-expense",
+    title: "Gasto registrado",
+    description: "Carga tu primer gasto.",
+    difficulty: "copper",
+    xp: 10,
+    isUnlocked: () => state.expenses.length >= 1,
+  },
+  {
+    id: "expense-categories",
+    title: "Mapa del dinero",
+    description: "Usa 3 categorias de gastos distintas.",
+    difficulty: "silver",
+    xp: 25,
+    isUnlocked: () => getUsedExpenseCategoryCount() >= 3,
+  },
+  {
+    id: "first-budget",
+    title: "Limite claro",
+    description: "Define tu primer presupuesto mensual.",
+    difficulty: "copper",
+    xp: 10,
+    isUnlocked: () => Object.values(state.monthlyBudgets).some((amount) => amount > 0),
+  },
+  {
+    id: "first-savings-goal",
+    title: "Ahorro en marcha",
+    description: "Define tu primera meta de ahorro.",
+    difficulty: "copper",
+    xp: 10,
+    isUnlocked: () => Object.values(state.monthlySavingsGoals).some((amount) => amount > 0),
+  },
+  {
+    id: "savings-goal-hit",
+    title: "Meta cumplida",
+    description: "Cumple una meta de ahorro mensual.",
+    difficulty: "platinum",
+    xp: 50,
+    isUnlocked: () => hasReachedSavingsGoal(),
+  },
 ];
 
 const state = loadState();
@@ -75,7 +171,10 @@ let authMode = "signin";
 let lastRenderedLevel = null;
 let selectedDate = toDateKey(new Date());
 let visibleMonth = new Date();
+let selectedExpenseMonth = getMonthKey(new Date());
 let activeView = "tasks";
+let editingTaskId = null;
+let editingExpenseId = null;
 
 const authScreen = document.querySelector("#authScreen");
 const appScreen = document.querySelector("#appScreen");
@@ -92,6 +191,7 @@ const taskForm = document.querySelector("#taskForm");
 const taskTitle = document.querySelector("#taskTitle");
 const taskXp = document.querySelector("#taskXp");
 const taskRepeat = document.querySelector("#taskRepeat");
+const taskSubmitButton = taskForm.querySelector("button[type='submit']");
 const taskList = document.querySelector("#taskList");
 const emptyState = document.querySelector("#emptyState");
 const taskDateText = document.querySelector("#taskDateText");
@@ -152,6 +252,35 @@ const statsCompletion = document.querySelector("#statsCompletion");
 const statsChart = document.querySelector("#statsChart");
 const topDoneList = document.querySelector("#topDoneList");
 const topMissedList = document.querySelector("#topMissedList");
+const expensesView = document.querySelector("#expensesView");
+const expensesTitle = document.querySelector("#expensesTitle");
+const expenseMonth = document.querySelector("#expenseMonth");
+const salaryForm = document.querySelector("#salaryForm");
+const salaryInput = document.querySelector("#salaryInput");
+const resetIncomeButton = document.querySelector("#resetIncomeButton");
+const budgetForm = document.querySelector("#budgetForm");
+const budgetInput = document.querySelector("#budgetInput");
+const savingsGoalForm = document.querySelector("#savingsGoalForm");
+const savingsGoalInput = document.querySelector("#savingsGoalInput");
+const savingsGoalStatus = document.querySelector("#savingsGoalStatus");
+const savingsGoalPercent = document.querySelector("#savingsGoalPercent");
+const savingsGoalBar = document.querySelector("#savingsGoalBar");
+const salaryTotal = document.querySelector("#salaryTotal");
+const spentTotal = document.querySelector("#spentTotal");
+const savedTotal = document.querySelector("#savedTotal");
+const budgetLeftTotal = document.querySelector("#budgetLeftTotal");
+const budgetStatusText = document.querySelector("#budgetStatusText");
+const budgetHintText = document.querySelector("#budgetHintText");
+const budgetBar = document.querySelector("#budgetBar");
+const expenseForm = document.querySelector("#expenseForm");
+const expenseTitle = document.querySelector("#expenseTitle");
+const expenseCategory = document.querySelector("#expenseCategory");
+const expenseAmount = document.querySelector("#expenseAmount");
+const expenseSubmitButton = expenseForm.querySelector("button[type='submit']");
+const expenseList = document.querySelector("#expenseList");
+const expenseEmptyState = document.querySelector("#expenseEmptyState");
+const categoryChart = document.querySelector("#categoryChart");
+const topExpenseCategory = document.querySelector("#topExpenseCategory");
 const profileOverlay = document.querySelector("#profileOverlay");
 const profileForm = document.querySelector("#profileForm");
 const profileName = document.querySelector("#profileName");
@@ -217,12 +346,22 @@ taskForm.addEventListener("submit", (event) => {
 
   if (!title) return;
 
-  const dates = getRepeatDates(taskRepeat.value);
-  for (const date of dates) addTask({ date, title, xp });
+  if (editingTaskId) {
+    const task = state.tasks.find((item) => item.id === editingTaskId);
+    if (task) {
+      task.title = title;
+      task.xp = xp;
+    }
+    editingTaskId = null;
+  } else {
+    const dates = getRepeatDates(taskRepeat.value);
+    for (const date of dates) addTask({ date, title, xp });
+  }
 
   taskForm.reset();
   taskXp.value = "20";
   taskRepeat.value = "day";
+  taskRepeat.disabled = false;
   taskTitle.focus();
   saveState();
   render();
@@ -263,6 +402,71 @@ sideMenuOverlay.addEventListener("click", (event) => {
   if (event.target === sideMenuOverlay) closeSideMenu();
 });
 statsPeriod.addEventListener("change", () => renderStats());
+expenseMonth.addEventListener("change", () => {
+  selectedExpenseMonth = expenseMonth.value || getMonthKey(new Date());
+  renderExpenses();
+});
+salaryForm.addEventListener("submit", (event) => {
+  event.preventDefault();
+  const income = parseMoneyInput(salaryInput.value);
+  if (income <= 0) return;
+
+  state.monthlyIncome[selectedExpenseMonth] = (state.monthlyIncome[selectedExpenseMonth] || 0) + income;
+  salaryForm.reset();
+  salaryInput.focus();
+  saveState();
+  renderExpenses();
+});
+resetIncomeButton.addEventListener("click", () => {
+  state.monthlyIncome[selectedExpenseMonth] = 0;
+  salaryForm.reset();
+  saveState();
+  renderExpenses();
+});
+budgetForm.addEventListener("submit", (event) => {
+  event.preventDefault();
+  state.monthlyBudgets[selectedExpenseMonth] = parseMoneyInput(budgetInput.value);
+  budgetForm.reset();
+  saveState();
+  renderExpenses();
+});
+savingsGoalForm.addEventListener("submit", (event) => {
+  event.preventDefault();
+  state.monthlySavingsGoals[selectedExpenseMonth] = parseMoneyInput(savingsGoalInput.value);
+  savingsGoalForm.reset();
+  saveState();
+  renderExpenses();
+});
+expenseForm.addEventListener("submit", (event) => {
+  event.preventDefault();
+  const title = expenseTitle.value.trim();
+  const amount = parseMoneyInput(expenseAmount.value);
+  if (!title || amount <= 0) return;
+
+  if (editingExpenseId) {
+    const expense = state.expenses.find((item) => item.id === editingExpenseId);
+    if (expense) {
+      expense.title = title;
+      expense.amount = amount;
+      expense.category = expenseCategory.value || "other";
+    }
+    editingExpenseId = null;
+  } else {
+    state.expenses.push({
+      id: createId(),
+      month: selectedExpenseMonth,
+      title,
+      amount,
+      category: expenseCategory.value || "other",
+      createdAt: Date.now(),
+    });
+  }
+
+  expenseForm.reset();
+  expenseTitle.focus();
+  saveState();
+  renderExpenses();
+});
 editNameButton.addEventListener("click", () => {
   profileOverlay.hidden = false;
   profileName.value = state.settings.displayName || "";
@@ -322,6 +526,10 @@ function loadState() {
     ],
     rewards: [],
     achievements: [],
+    expenses: [],
+    monthlyIncome: {},
+    monthlyBudgets: {},
+    monthlySavingsGoals: {},
     settings: getDefaultSettings(),
   };
 }
@@ -339,12 +547,37 @@ function normalizeState(saved) {
           .map((reward) => ({ level: Number(reward.level), title: String(reward.title || "") }))
       : [],
     achievements: Array.isArray(saved.achievements) ? saved.achievements.map(String) : [],
+    expenses: Array.isArray(saved.expenses)
+      ? saved.expenses
+          .filter((expense) => expense && expense.month && Number(expense.amount) > 0)
+          .map((expense) => ({
+            id: String(expense.id || createId()),
+            month: String(expense.month).slice(0, 7),
+            title: String(expense.title || "Gasto"),
+            amount: Math.max(0, Number(expense.amount) || 0),
+            category: getExpenseCategory(expense.category).id,
+            createdAt: Number(expense.createdAt) || Date.now(),
+          }))
+      : [],
+    monthlyIncome: normalizeMonthlyIncome(saved.monthlyIncome),
+    monthlyBudgets: normalizeMonthlyIncome(saved.monthlyBudgets),
+    monthlySavingsGoals: normalizeMonthlyIncome(saved.monthlySavingsGoals),
     settings: {
       ...getDefaultSettings(),
       ...(saved.settings || {}),
       displayName: String(saved.settings?.displayName || "").trim(),
     },
   };
+}
+
+function normalizeMonthlyIncome(monthlyIncome) {
+  if (!monthlyIncome || typeof monthlyIncome !== "object" || Array.isArray(monthlyIncome)) return {};
+
+  return Object.fromEntries(
+    Object.entries(monthlyIncome)
+      .filter(([month]) => /^\d{4}-\d{2}$/.test(month))
+      .map(([month, amount]) => [month, Math.max(0, Number(amount) || 0)]),
+  );
 }
 
 function saveState() {
@@ -372,6 +605,8 @@ function render() {
   renderProgress();
   renderRewards();
   renderNotifications();
+  renderExpenseCategories();
+  renderExpenses();
   renderView();
   renderProfilePrompt();
   renderStats();
@@ -429,7 +664,14 @@ function renderNotifications() {
 
 function renderHeader() {
   const name = state.settings.displayName || "vos";
-  selectedDateTitle.textContent = `Hola ${name}, que hacemos hoy?`;
+  const titles = {
+    tasks: `Hola ${name}, que hacemos hoy?`,
+    stats: "Estadisticas",
+    expenses: "Gastos del mes",
+    profile: "Perfil",
+    calendar: "Calendario",
+  };
+  selectedDateTitle.textContent = titles[activeView] || titles.tasks;
   profileNameTitle.textContent = name;
   taskDateText.textContent = formatSelectedDate(selectedDate);
   monthTitle.textContent = visibleMonth.toLocaleDateString("es-AR", {
@@ -443,6 +685,7 @@ function renderView() {
   tasksView.hidden = activeView !== "tasks";
   calendarView.hidden = activeView !== "calendar";
   statsView.hidden = activeView !== "stats";
+  expensesView.hidden = activeView !== "expenses";
   profileView.hidden = activeView !== "profile";
   menuItems.forEach((item) => {
     item.classList.toggle("active", item.dataset.view === activeView);
@@ -459,8 +702,10 @@ function closeSideMenu() {
 
 function setActiveView(view) {
   activeView = view;
+  renderHeader();
   renderView();
   if (view === "stats") renderStats();
+  if (view === "expenses") renderExpenses();
   if (view === "calendar") renderPageCalendar();
 }
 
@@ -569,6 +814,7 @@ function renderTasks() {
   const tasks = getSelectedTasks();
   taskList.innerHTML = "";
   emptyState.classList.toggle("hidden", tasks.length > 0);
+  taskSubmitButton.textContent = editingTaskId ? "Guardar" : "Agregar";
 
   for (const task of tasks) {
     const item = document.createElement("li");
@@ -602,6 +848,14 @@ function renderTasks() {
     reminderButton.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 21h4M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9"/></svg>';
     reminderButton.addEventListener("click", () => toggleTaskReminder(task));
 
+    const editButton = document.createElement("button");
+    editButton.type = "button";
+    editButton.className = "edit-button";
+    editButton.title = "Editar";
+    editButton.setAttribute("aria-label", "Editar tarea");
+    editButton.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5Z"/></svg>';
+    editButton.addEventListener("click", () => startEditTask(task));
+
     const deleteButton = document.createElement("button");
     deleteButton.type = "button";
     deleteButton.className = "delete-button";
@@ -611,11 +865,12 @@ function renderTasks() {
     deleteButton.addEventListener("click", () => {
       const index = state.tasks.findIndex((itemToFind) => itemToFind.id === task.id);
       if (index >= 0) state.tasks.splice(index, 1);
+      if (editingTaskId === task.id) editingTaskId = null;
       saveState();
       render();
     });
 
-    item.append(checkButton, title, xp, reminderButton, deleteButton);
+    item.append(checkButton, title, xp, reminderButton, editButton, deleteButton);
     taskList.appendChild(item);
   }
 
@@ -651,6 +906,25 @@ function renderSuggestions() {
     item.append(text, addButton);
     suggestionList.appendChild(item);
   }
+}
+
+function startEditTask(task) {
+  editingTaskId = task.id;
+  taskTitle.value = task.title;
+  taskXp.value = String(task.xp);
+  taskRepeat.value = "day";
+  taskRepeat.disabled = true;
+  taskSubmitButton.textContent = "Guardar";
+  taskTitle.focus();
+}
+
+function startEditExpense(expense) {
+  editingExpenseId = expense.id;
+  expenseTitle.value = expense.title;
+  expenseCategory.value = getExpenseCategory(expense.category).id;
+  expenseAmount.value = String(expense.amount);
+  expenseSubmitButton.textContent = "Guardar";
+  expenseTitle.focus();
 }
 
 function updateAchievements() {
@@ -759,6 +1033,164 @@ function renderTaskInsightList(list, items, type) {
     row.className = "stats-item simple";
     row.innerHTML = `<strong>${item.title}</strong><span>${item[type]} veces</span>`;
     list.appendChild(row);
+  }
+}
+
+function renderExpenses() {
+  expenseMonth.value = selectedExpenseMonth;
+  expensesTitle.textContent = formatMonthLabel(selectedExpenseMonth);
+  expenseSubmitButton.textContent = editingExpenseId ? "Guardar" : "Agregar gasto";
+
+  const monthlyExpenses = getMonthlyExpenses();
+  const salary = state.monthlyIncome[selectedExpenseMonth] || 0;
+  const budget = state.monthlyBudgets[selectedExpenseMonth] || 0;
+  const savingsGoal = state.monthlySavingsGoals[selectedExpenseMonth] || 0;
+  const spent = monthlyExpenses.reduce((total, expense) => total + expense.amount, 0);
+  const saved = salary - spent;
+  const budgetLeft = budget - spent;
+
+  renderSavingsGoal(savingsGoal, saved);
+  budgetInput.placeholder = budget ? `Actual: ${formatMoney(budget)}` : "Ej: 300000";
+  salaryTotal.textContent = formatMoney(salary);
+  spentTotal.textContent = formatMoney(spent);
+  savedTotal.textContent = formatMoney(saved);
+  savedTotal.classList.toggle("negative", saved < 0);
+  budgetLeftTotal.textContent = budget ? formatMoney(budgetLeft) : "Sin limite";
+  budgetLeftTotal.classList.toggle("negative", budget > 0 && budgetLeft < 0);
+  renderBudgetStatus(budget, spent);
+  renderCategoryChart(monthlyExpenses, spent);
+
+  expenseList.innerHTML = "";
+  expenseEmptyState.classList.toggle("hidden", monthlyExpenses.length > 0);
+
+  for (const expense of monthlyExpenses) {
+    const item = document.createElement("li");
+    item.className = "expense-item";
+
+    const content = document.createElement("div");
+    const title = document.createElement("strong");
+    title.textContent = expense.title;
+    const meta = document.createElement("small");
+    meta.textContent = `${getExpenseCategory(expense.category).label} · ${formatExpenseDate(expense.createdAt)}`;
+    content.append(title, meta);
+
+    const amount = document.createElement("span");
+    amount.textContent = formatMoney(expense.amount);
+
+    const editButton = document.createElement("button");
+    editButton.type = "button";
+    editButton.className = "edit-button compact";
+    editButton.setAttribute("aria-label", `Editar ${expense.title}`);
+    editButton.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5Z"/></svg>';
+    editButton.addEventListener("click", () => startEditExpense(expense));
+
+    const deleteButton = document.createElement("button");
+    deleteButton.type = "button";
+    deleteButton.className = "delete-button compact";
+    deleteButton.setAttribute("aria-label", `Eliminar ${expense.title}`);
+    deleteButton.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h18M8 6V4h8v2M10 11v6M14 11v6M6 6l1 15h10l1-15"/></svg>';
+    deleteButton.addEventListener("click", () => {
+      const index = state.expenses.findIndex((itemToFind) => itemToFind.id === expense.id);
+      if (index >= 0) state.expenses.splice(index, 1);
+      if (editingExpenseId === expense.id) editingExpenseId = null;
+      saveState();
+      renderExpenses();
+    });
+
+    item.append(content, amount, editButton, deleteButton);
+    expenseList.appendChild(item);
+  }
+}
+
+function renderSavingsGoal(goal, saved) {
+  savingsGoalInput.placeholder = goal ? `Actual: ${formatMoney(goal)}` : "Ej: 100000";
+
+  if (!goal) {
+    savingsGoalStatus.textContent = "Sin meta definida";
+    savingsGoalPercent.textContent = "0%";
+    savingsGoalBar.style.width = "0%";
+    savingsGoalBar.classList.remove("warning", "danger");
+    return;
+  }
+
+  const percentage = Math.max(0, Math.round((saved / goal) * 100));
+  savingsGoalPercent.textContent = `${percentage}%`;
+  savingsGoalStatus.textContent =
+    saved >= goal ? `Meta cumplida: ${formatMoney(saved)}` : `Ahorrado: ${formatMoney(Math.max(saved, 0))} de ${formatMoney(goal)}`;
+  savingsGoalBar.style.width = `${clamp(percentage, 0, 100)}%`;
+  savingsGoalBar.classList.toggle("warning", percentage >= 75 && percentage < 100);
+  savingsGoalBar.classList.toggle("danger", saved < 0);
+}
+
+function renderExpenseCategories() {
+  const currentValue = expenseCategory.value || "other";
+  expenseCategory.innerHTML = "";
+
+  for (const category of EXPENSE_CATEGORIES) {
+    const option = document.createElement("option");
+    option.value = category.id;
+    option.textContent = category.label;
+    expenseCategory.appendChild(option);
+  }
+
+  expenseCategory.value = getExpenseCategory(currentValue).id;
+}
+
+function renderBudgetStatus(budget, spent) {
+  if (!budget) {
+    budgetStatusText.textContent = "Sin presupuesto definido";
+    budgetHintText.textContent = "Agrega un limite para controlar mejor tus gastos.";
+    budgetBar.style.width = "0%";
+    budgetBar.classList.remove("warning", "danger");
+    return;
+  }
+
+  const percentage = Math.round((spent / budget) * 100);
+  const capped = clamp(percentage, 0, 100);
+  budgetBar.style.width = `${capped}%`;
+  budgetBar.classList.toggle("warning", percentage >= 75 && percentage < 100);
+  budgetBar.classList.toggle("danger", percentage >= 100);
+  budgetStatusText.textContent = `Usaste ${percentage}% del presupuesto`;
+  budgetHintText.textContent =
+    spent <= budget
+      ? `Todavia podes gastar ${formatMoney(budget - spent)}.`
+      : `Te pasaste por ${formatMoney(spent - budget)}.`;
+}
+
+function renderCategoryChart(expenses, spent) {
+  categoryChart.innerHTML = "";
+
+  if (expenses.length === 0 || spent <= 0) {
+    topExpenseCategory.textContent = "Sin gastos";
+    const empty = document.createElement("p");
+    empty.className = "stats-empty";
+    empty.textContent = "Todavia no hay categorias para mostrar.";
+    categoryChart.appendChild(empty);
+    return;
+  }
+
+  const totals = EXPENSE_CATEGORIES.map((category) => ({
+    ...category,
+    total: expenses
+      .filter((expense) => getExpenseCategory(expense.category).id === category.id)
+      .reduce((total, expense) => total + expense.amount, 0),
+  })).filter((category) => category.total > 0);
+
+  totals.sort((first, second) => second.total - first.total);
+  topExpenseCategory.textContent = totals[0].label;
+
+  for (const category of totals) {
+    const percentage = Math.round((category.total / spent) * 100);
+    const row = document.createElement("div");
+    row.className = "category-row";
+    row.innerHTML = `
+      <div class="category-meta">
+        <strong>${category.label}</strong>
+        <span>${formatMoney(category.total)} · ${percentage}%</span>
+      </div>
+      <div class="category-track"><div class="category-fill" style="width: ${percentage}%"></div></div>
+    `;
+    categoryChart.appendChild(row);
   }
 }
 
@@ -951,6 +1383,10 @@ function getCurrentStreak() {
 }
 
 function hasPerfectDay() {
+  return getPerfectDayCount() > 0;
+}
+
+function getPerfectDayCount() {
   const tasksByDate = new Map();
 
   for (const task of state.tasks) {
@@ -958,11 +1394,22 @@ function hasPerfectDay() {
     tasksByDate.get(task.date).push(task);
   }
 
-  for (const tasks of tasksByDate.values()) {
-    if (tasks.length > 0 && tasks.every((task) => task.completed)) return true;
-  }
+  return [...tasksByDate.values()].filter((tasks) => tasks.length > 0 && tasks.every((task) => task.completed)).length;
+}
 
-  return false;
+function getUsedExpenseCategoryCount() {
+  return new Set(state.expenses.map((expense) => getExpenseCategory(expense.category).id)).size;
+}
+
+function hasReachedSavingsGoal() {
+  return Object.entries(state.monthlySavingsGoals).some(([month, goal]) => {
+    if (!goal) return false;
+    const income = state.monthlyIncome[month] || 0;
+    const spent = state.expenses
+      .filter((expense) => expense.month === month)
+      .reduce((total, expense) => total + expense.amount, 0);
+    return income - spent >= goal;
+  });
 }
 
 function getNextRewardText(level) {
@@ -1038,6 +1485,16 @@ function getStatsRange(period) {
   return { startKey: toDateKey(start), endKey: toDateKey(end) };
 }
 
+function getMonthlyExpenses() {
+  return state.expenses
+    .filter((expense) => expense.month === selectedExpenseMonth)
+    .sort((first, second) => second.createdAt - first.createdAt);
+}
+
+function getExpenseCategory(id) {
+  return EXPENSE_CATEGORIES.find((category) => category.id === id) || EXPENSE_CATEGORIES.at(-1);
+}
+
 function getTaskStats(tasks) {
   const groups = new Map();
 
@@ -1094,9 +1551,20 @@ function toDateKey(date) {
   return `${year}-${month}-${day}`;
 }
 
+function getMonthKey(date) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  return `${year}-${month}`;
+}
+
 function parseDateKey(key) {
   const [year, month, day] = key.split("-").map(Number);
   return new Date(year, month - 1, day);
+}
+
+function parseMonthKey(key) {
+  const [year, month] = key.split("-").map(Number);
+  return new Date(year, month - 1, 1);
 }
 
 function getWeekStart(date) {
@@ -1130,6 +1598,36 @@ function formatSelectedDate(key) {
     day: "numeric",
     month: "long",
   });
+}
+
+function formatMonthLabel(key) {
+  return parseMonthKey(key).toLocaleDateString("es-AR", {
+    month: "long",
+    year: "numeric",
+  });
+}
+
+function formatExpenseDate(timestamp) {
+  return new Date(timestamp).toLocaleDateString("es-AR", {
+    day: "numeric",
+    month: "short",
+  });
+}
+
+function formatMoney(value) {
+  return new Intl.NumberFormat("es-AR", {
+    style: "currency",
+    currency: "ARS",
+    maximumFractionDigits: 0,
+  }).format(value || 0);
+}
+
+function parseMoneyInput(value) {
+  const normalized = String(value || "")
+    .replace(/\s/g, "")
+    .replace(/\./g, "")
+    .replace(",", ".");
+  return Math.max(0, Number(normalized) || 0);
 }
 
 function clamp(value, min, max) {
@@ -1249,6 +1747,10 @@ async function loadCloudState() {
     state.tasks = cloudState.tasks;
     state.rewards = cloudState.rewards;
     state.achievements = cloudState.achievements;
+    state.expenses = cloudState.expenses;
+    state.monthlyIncome = cloudState.monthlyIncome;
+    state.monthlyBudgets = cloudState.monthlyBudgets;
+    state.monthlySavingsGoals = cloudState.monthlySavingsGoals;
     state.settings = cloudState.settings;
     localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
   } else {
@@ -1278,6 +1780,10 @@ async function saveCloudState() {
       tasks: state.tasks,
       rewards: state.rewards,
       achievements: state.achievements,
+      expenses: state.expenses,
+      monthlyIncome: state.monthlyIncome,
+      monthlyBudgets: state.monthlyBudgets,
+      monthlySavingsGoals: state.monthlySavingsGoals,
       settings: state.settings,
     },
     updated_at: new Date().toISOString(),

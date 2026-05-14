@@ -76,6 +76,10 @@
               <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 19V9M12 19V5M20 19v-7" /></svg>
               Estadisticas
             </button>
+            <button class="menu-item" type="button" data-view="expenses">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7H14a3.5 3.5 0 0 1 0 7H6" /></svg>
+              Gastos
+            </button>
             <button class="menu-item" type="button" data-view="profile">
               <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 21a8 8 0 0 0-16 0M12 3a4 4 0 1 0 0 8 4 4 0 0 0 0-8Z" /></svg>
               Perfil
@@ -295,6 +299,114 @@
             <h3>Mas pendientes</h3>
             <ul id="topMissedList" class="stats-list"></ul>
           </section>
+        </div>
+      </section>
+
+      <section class="expenses-panel" id="expensesView" hidden aria-label="Gastos">
+        <div class="stats-header">
+          <div>
+            <p class="section-label">Gastos</p>
+            <h2 id="expensesTitle">Mes actual</h2>
+          </div>
+          <input id="expenseMonth" type="month" aria-label="Mes de gastos" />
+        </div>
+
+        <section class="savings-goal-card" aria-label="Meta de ahorro">
+          <div class="savings-goal-header">
+            <div>
+              <p class="section-label">Meta de ahorro</p>
+              <strong id="savingsGoalStatus">Sin meta definida</strong>
+            </div>
+            <span id="savingsGoalPercent">0%</span>
+          </div>
+          <div class="budget-track">
+            <div id="savingsGoalBar" class="budget-fill"></div>
+          </div>
+          <form id="savingsGoalForm" class="salary-form compact-expense-form">
+            <div class="field">
+              <label for="savingsGoalInput">Monto objetivo</label>
+              <input id="savingsGoalInput" type="text" inputmode="decimal" placeholder="Ej: 100000" />
+            </div>
+            <button class="primary-button" type="submit">Guardar meta</button>
+          </form>
+        </section>
+
+        <form id="salaryForm" class="salary-form">
+          <div class="field">
+            <label for="salaryInput">Agregar dinero</label>
+            <input id="salaryInput" type="text" inputmode="decimal" placeholder="Ej: 50000" />
+          </div>
+          <button class="primary-button" type="submit">Sumar al mes</button>
+          <button class="secondary-button" id="resetIncomeButton" type="button">Reiniciar ingresos</button>
+        </form>
+
+        <div class="expense-summary" aria-label="Resumen del mes">
+          <div>
+            <span id="salaryTotal">$0</span>
+            <small>ingresos</small>
+          </div>
+          <div>
+            <span id="spentTotal">$0</span>
+            <small>gastado</small>
+          </div>
+          <div>
+            <span id="savedTotal">$0</span>
+            <small>ahorrado</small>
+          </div>
+          <div>
+            <span id="budgetLeftTotal">$0</span>
+            <small>restante del limite</small>
+          </div>
+        </div>
+
+        <details class="expense-details-card" open>
+          <summary>
+            <span>Presupuesto</span>
+            <small id="budgetStatusText">Sin presupuesto definido</small>
+          </summary>
+          <form id="budgetForm" class="salary-form compact-expense-form">
+            <div class="field">
+              <label for="budgetInput">Limite del mes</label>
+              <input id="budgetInput" type="text" inputmode="decimal" placeholder="Ej: 300000" />
+            </div>
+            <button class="primary-button" type="submit">Guardar</button>
+          </form>
+          <section class="budget-card" aria-label="Uso del presupuesto">
+            <small id="budgetHintText">Agrega un limite para controlar mejor tus gastos.</small>
+            <div class="budget-track">
+              <div id="budgetBar" class="budget-fill"></div>
+            </div>
+          </section>
+        </details>
+
+        <form id="expenseForm" class="expense-form">
+          <div class="field">
+            <label for="expenseTitle">Gasto</label>
+            <input id="expenseTitle" type="text" autocomplete="off" placeholder="Ej: Supermercado" />
+          </div>
+          <div class="field">
+            <label for="expenseCategory">Categoria</label>
+            <select id="expenseCategory"></select>
+          </div>
+          <div class="field">
+            <label for="expenseAmount">Monto</label>
+            <input id="expenseAmount" type="text" inputmode="decimal" placeholder="Ej: 12000" />
+          </div>
+          <button class="primary-button" type="submit">Agregar gasto</button>
+        </form>
+
+        <details class="expense-details-card">
+          <summary>
+            <span>Categorias</span>
+            <small id="topExpenseCategory">Sin gastos</small>
+          </summary>
+          <div id="categoryChart" class="category-chart"></div>
+        </details>
+
+        <ul id="expenseList" class="expense-list" aria-label="Lista de gastos"></ul>
+        <div id="expenseEmptyState" class="empty-state">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M6 7v13h12V7M9 11h6M9 15h4M8 7V4h8v3" /></svg>
+          <p>No cargaste gastos para este mes.</p>
         </div>
       </section>
 
